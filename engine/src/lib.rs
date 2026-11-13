@@ -86,7 +86,7 @@ impl OutFormat {
 // ---------------------------------------------------------------------------
 
 thread_local! {
-    static LAST_RESULT_JSON: RefCell<String> = RefCell::new(String::new());
+    static LAST_RESULT_JSON: RefCell<String> = const { RefCell::new(String::new()) };
 }
 
 fn set_last_result(json: String) {
@@ -137,8 +137,7 @@ pub fn compress_core(
     let input_format = image::guess_format(input).ok();
 
     // 1) Decode.
-    let decoded = image::load_from_memory(input)
-        .map_err(|e| format!("image decode fail: {e}"))?;
+    let decoded = image::load_from_memory(input).map_err(|e| format!("image decode fail: {e}"))?;
 
     // 2) EXIF auto-orient (fail ho to bina orient aage badho).
     let img = match read_exif_orientation(input) {
@@ -239,7 +238,7 @@ fn read_exif_orientation(input: &[u8]) -> Option<u32> {
     let reader = exif::Reader::new();
     let exif_data = reader.read_from_container(&mut cursor).ok()?;
     let field = exif_data.get_field(exif::Tag::Orientation, exif::In::PRIMARY)?;
-    field.value.get_uint(0).map(|v| v as u32)
+    field.value.get_uint(0)
 }
 
 fn apply_orientation(img: DynamicImage, orientation: u32) -> DynamicImage {
@@ -280,9 +279,8 @@ fn flatten(img: &DynamicImage, bg: (u8, u8, u8)) -> DynamicImage {
     let mut out = image::RgbImage::new(rgba.width(), rgba.height());
     for (x, y, p) in rgba.enumerate_pixels() {
         let a = p[3] as u32;
-        let blend = |fg: u8, bgc: u8| -> u8 {
-            ((fg as u32 * a + bgc as u32 * (255 - a)) / 255) as u8
-        };
+        let blend =
+            |fg: u8, bgc: u8| -> u8 { ((fg as u32 * a + bgc as u32 * (255 - a)) / 255) as u8 };
         out.put_pixel(
             x,
             y,
@@ -295,21 +293,13 @@ fn flatten(img: &DynamicImage, bg: (u8, u8, u8)) -> DynamicImage {
 /// ImageEncoder::write_image ke liye helper: image ko uske color type ke
 /// hisaab se raw bytes me badal kar encoder ko deta hai (alpha ho to RGBA,
 /// warna RGB — taaki PNG/WebP me faltu alpha channel na jude).
-fn write_encoded(
-    encoder: impl ImageEncoder,
-    img: &DynamicImage,
-) -> Result<(), image::ImageError> {
+fn write_encoded(encoder: impl ImageEncoder, img: &DynamicImage) -> Result<(), image::ImageError> {
     let (w, h) = img.dimensions();
     match img.color() {
         image::ColorType::Rgb8 => {
             encoder.write_image(img.to_rgb8().as_raw(), w, h, ExtendedColorType::Rgb8)
         }
-        _ => encoder.write_image(
-            img.to_rgba8().as_raw(),
-            w,
-            h,
-            ExtendedColorType::Rgba8,
-        ),
+        _ => encoder.write_image(img.to_rgba8().as_raw(), w, h, ExtendedColorType::Rgba8),
     }
 }
 
@@ -550,7 +540,7 @@ mod tests {
                     x,
                     y,
                     image::Rgb([
-                        grad.wrapping_add(n) / 1,
+                        grad.wrapping_add(n),
                         ((y * 255) / 600) as u8 ^ n,
                         grad.wrapping_add(n / 2),
                     ]),
