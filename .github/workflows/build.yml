@@ -24,7 +24,9 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Main branch ki runs kabhi cancel nahi hongi (queued macOS/desktop legs
+  # marr jaati thi). Sirf PR runs par purani run cancel hogi.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   PNPM_VERSION: 9.15.0
@@ -192,13 +194,11 @@ jobs:
           path: ui/dist
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          projectName: fotmio
-          directory: ui/dist
-          branch: main
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ui/dist --project-name=fotmio --branch=main
 
   # ---------------------------------------------------------------------------
   # Android — sirf jab mobile/android committed ho (warna job skipped)
