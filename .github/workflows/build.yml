@@ -180,7 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: web
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     environment:
       name: production
       url: https://fotmio.pages.dev
@@ -271,7 +271,7 @@ jobs:
   # ---------------------------------------------------------------------------
   ios:
     name: iOS · unsigned archive
-    runs-on: macos-14
+    runs-on: macos-latest
     timeout-minutes: 45
     needs: [test, detect]
     if: needs.detect.outputs.ios == 'true'
@@ -345,7 +345,7 @@ jobs:
             args: ''
             bundle-path: desktop/src-tauri/target/release/bundle/**
           - platform: macOS
-            os: macos-14
+            os: macos-latest
             rust-targets: wasm32-unknown-unknown,aarch64-apple-darwin,x86_64-apple-darwin
             args: --target universal-apple-darwin
             bundle-path: desktop/src-tauri/target/universal-apple-darwin/release/bundle/**
