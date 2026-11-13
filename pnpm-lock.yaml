@@ -16,6 +16,9 @@ importers:
 
   mobile:
     dependencies:
+      '@capacitor/android':
+        specifier: ^8
+        version: 8.6.2(@capacitor/core@8.6.2)
       '@capacitor/camera':
         specifier: ^8.2.6
         version: 8.2.6(@capacitor/core@8.6.2)
@@ -25,6 +28,9 @@ importers:
       '@capacitor/filesystem':
         specifier: ^8.1.5
         version: 8.1.5(@capacitor/core@8.6.2)
+      '@capacitor/ios':
+        specifier: ^8
+        version: 8.6.2(@capacitor/core@8.6.2)
       '@capacitor/share':
         specifier: ^8.0.3
         version: 8.0.3(@capacitor/core@8.6.2)
@@ -62,6 +68,11 @@ importers:
 
 packages:
 
+  '@capacitor/android@8.6.2':
+    resolution: {integrity: sha512-dWXnXmOVTtxU91n5h11MzoQ7PAMjyzU1qguw0mBJZiwSuhGvLKTG/IlsQ75H8qeE0a1acV2f573x15wYvyzuVA==}
+    peerDependencies:
+      '@capacitor/core': ^8.6.0
+
   '@capacitor/camera@8.2.6':
     resolution: {integrity: sha512-jzvrMrEKs5ACw1/HmcgN5XwSlXYF+/xRKzWtBUESQs5ePf3tTfnR8Nk/p+aSEgay8yZEI0aZQ+2/1xDwMCdV2w==}
     peerDependencies:
@@ -79,6 +90,11 @@ packages:
     resolution: {integrity: sha512-m1RkI8L83NJeppEKyRWioK3MDp2vjlA+QfUQcF8/xRlcXNC2HYxqoyYJ+K4M0EcVovy+g+4F24S05+bhK4Vgdg==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/ios@8.6.2':
+    resolution: {integrity: sha512-YnVm0lRA1mQWK0SKd2bdJIOG+PXRRDDdndZ1+nGqeiob+QmHZmb4wWo5gVpWhoHO37pGi2qzH5w5WGvfKrs+Gg==}
+    peerDependencies:
+      '@capacitor/core': ^8.6.0
 
   '@capacitor/share@8.0.3':
     resolution: {integrity: sha512-gnvZBV1NPu2B8vd1UKncR56G15ueHd0aZLqgDov++t3SmTBG9Q0VrAZ1VnHn5stxlmglVaTb4RwopMgbpLzroA==}
@@ -945,6 +961,10 @@ packages:
 
 snapshots:
 
+  '@capacitor/android@8.6.2(@capacitor/core@8.6.2)':
+    dependencies:
+      '@capacitor/core': 8.6.2
+
   '@capacitor/camera@8.2.6(@capacitor/core@8.6.2)':
     dependencies:
       '@capacitor/core': 8.6.2
@@ -980,6 +1000,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.6.2
       '@capacitor/synapse': 1.0.4
+
+  '@capacitor/ios@8.6.2(@capacitor/core@8.6.2)':
+    dependencies:
+      '@capacitor/core': 8.6.2
 
   '@capacitor/share@8.0.3(@capacitor/core@8.6.2)':
     dependencies:
