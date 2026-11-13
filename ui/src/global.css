@@ -1,0 +1,83 @@
+/* Fotmio global styles — theme variables + base layout.
+   Component-specific styles live in each Svelte component (scoped).
+
+   Theme direction (locked): professional, big-tech style. Neutral
+   surfaces, one restrained royal-blue accent, high-contrast text,
+   subtle borders and shadows. No gradients, no neon, no cartoon styling. */
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-soft: #eaf1fe;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --border: #dfe4ea;
+  --text: #111827;
+  --text-2: #4b5563;
+  --text-3: #6b7280;
+  --success: #15803d;
+  --success-soft: #ecfdf3;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+  --warning: #b45309;
+  --warning-soft: #fffbeb;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgb(17 24 39 / 0.06), 0 2px 8px rgb(17 24 39 / 0.05);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-soft: #1c2a44;
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-2: #20242d;
+  --border: #2a2f3a;
+  --text: #f3f4f6;
+  --text-2: #c0c6d1;
+  --text-3: #8b93a3;
+  --success: #4ade80;
+  --success-soft: #0d2318;
+  --danger: #f87171;
+  --danger-soft: #2a1517;
+  --warning: #fbbf24;
+  --warning-soft: #2a2111;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.45), 0 2px 8px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+input,
+select {
+  font: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}

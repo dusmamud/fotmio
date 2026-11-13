@@ -1,0 +1,1 @@
+{"$schema":"../gen/schemas/desktop-schema.json","description":"Fotmio main window ki default permissions — file picker (dialog) aur compressed photo save karne ke liye filesystem access.","identifier":"default","permissions":["core:default","dialog:default","fs:default"],"windows":["main"]}

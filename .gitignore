@@ -1,0 +1,10 @@
+node_modules/
+dist/
+target/
+ui/src/engine/wasm/
+*.log
+.DS_Store
+desktop/src-tauri/target/
+mobile/android/
+mobile/ios/
+!mobile/capacitor.config.ts
