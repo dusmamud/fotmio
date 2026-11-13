@@ -231,6 +231,10 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Default package list me legacy 'tools' package hota hai jo naye SDK
+          # repository me exist nahi karta — isiliye explicit list (SDK 36).
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
