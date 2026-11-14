@@ -14,6 +14,13 @@
   import SelectScreen from './lib/SelectScreen.svelte'
   import TargetScreen from './lib/TargetScreen.svelte'
   import ResultScreen from './lib/ResultScreen.svelte'
+  import { Button } from '$lib/components/ui/button'
+  import { cn } from '$lib/utils'
+  import Check from 'lucide-svelte/icons/check'
+  import ImageIcon from 'lucide-svelte/icons/image'
+  import Moon from 'lucide-svelte/icons/moon'
+  import ShieldCheck from 'lucide-svelte/icons/shield-check'
+  import Sun from 'lucide-svelte/icons/sun'
 
   let screen = $state<1 | 2 | 3>(1)
   let images = $state<SelectedImage[]>([])
@@ -159,325 +166,125 @@
   })
 </script>
 
-<header class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="4" />
-          <circle cx="9.5" cy="9.5" r="1.8" fill="currentColor" stroke="none" />
-          <path d="m21 16-4.8-4.8a1.6 1.6 0 0 0-2.2 0L7 18" />
-        </svg>
-      </span>
-      <div class="brand-text">
-        <h1>Fotmio</h1>
-        <p>{$t.app.tagline}</p>
+<div class="flex min-h-dvh flex-col">
+  <header class="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
+    <div class="mx-auto flex h-14 w-full max-w-[1080px] items-center gap-2 px-4 sm:h-16 sm:gap-3 sm:px-6">
+      <div class="flex min-w-0 items-center gap-2.5">
+        <span class="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-foreground shadow-sm sm:size-10" aria-hidden="true">
+          <ImageIcon class="size-5" />
+        </span>
+        <div class="min-w-0 leading-tight">
+          <h1 class="truncate text-[17px] font-bold sm:text-lg">Fotmio</h1>
+          <p class="hidden truncate text-xs text-muted-foreground min-[420px]:block">{$t.app.tagline}</p>
+        </div>
+      </div>
+      <div class="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div class="flex rounded-full border bg-card p-0.5 shadow-xs" role="group" aria-label={$t.app.language}>
+          <button
+            type="button"
+            class={cn(
+              'h-8 rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors',
+              $locale === 'en-IN' && 'bg-primary text-primary-foreground',
+            )}
+            aria-pressed={$locale === 'en-IN'}
+            onclick={() => setLocale('en-IN')}>EN</button
+          >
+          <button
+            type="button"
+            class={cn(
+              'h-8 rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors',
+              $locale === 'hi-IN' && 'bg-primary text-primary-foreground',
+            )}
+            aria-pressed={$locale === 'hi-IN'}
+            onclick={() => setLocale('hi-IN')}>हिंदी</button
+          >
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          class="rounded-full"
+          onclick={toggleTheme}
+          aria-label={dark ? $t.app.switchToLight : $t.app.switchToDark}
+          title={dark ? $t.app.switchToLight : $t.app.switchToDark}
+        >
+          {#if dark}
+            <Sun />
+          {:else}
+            <Moon />
+          {/if}
+        </Button>
       </div>
     </div>
-    <div class="header-actions">
-      <div class="lang-switch" role="group" aria-label={$t.app.language}>
-        <button
-          type="button"
-          class:active={$locale === 'en-IN'}
-          aria-pressed={$locale === 'en-IN'}
-          onclick={() => setLocale('en-IN')}>EN</button
-        >
-        <button
-          type="button"
-          class:active={$locale === 'hi-IN'}
-          aria-pressed={$locale === 'hi-IN'}
-          onclick={() => setLocale('hi-IN')}>हिंदी</button
-        >
-      </div>
-      <button
-        type="button"
-        class="icon-btn"
-        onclick={toggleTheme}
-        aria-label={dark ? $t.app.switchToLight : $t.app.switchToDark}
-        title={dark ? $t.app.switchToLight : $t.app.switchToDark}
-      >
-        {#if dark}
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <circle cx="12" cy="12" r="4" />
-            <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-          </svg>
-        {:else}
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
-          </svg>
-        {/if}
-      </button>
-    </div>
-  </div>
-</header>
+  </header>
 
-<div class="shell">
-  <div class="subhead">
-    <p class="privacy">
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 22s8-3.6 8-10V5l-8-3-8 3v7c0 6.4 8 10 8 10z" />
-        <path d="m9 11.5 2 2 4-4" />
-      </svg>
+  <div class="mx-auto flex w-full max-w-[1080px] flex-1 flex-col gap-4 px-4 pt-4 sm:gap-5 sm:px-6 sm:pt-6">
+    <p class="flex items-center gap-2 rounded-xl border border-success/25 bg-success/10 px-3 py-2 text-[13px] font-medium text-success sm:text-sm">
+      <ShieldCheck class="size-4 shrink-0" aria-hidden="true" />
       <span>{$t.app.privacy}</span>
     </p>
 
-    <ol class="steps" aria-label={$t.app.progress}>
+    <ol class="flex items-center gap-1.5 sm:gap-2" aria-label={$t.app.progress}>
       {#each stepLabels as label, i (label)}
-        <li class:active={screen === i + 1} class:done={screen > i + 1}>
-          <span class="dot" aria-hidden="true">
+        <li class="flex items-center gap-1.5 sm:gap-2">
+          <span
+            class={cn(
+              'flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold sm:size-7 sm:text-xs',
+              screen === i + 1 && 'border-primary bg-primary text-primary-foreground',
+              screen > i + 1 && 'border-success bg-success text-success-foreground',
+              screen < i + 1 && 'border-border bg-card text-muted-foreground',
+            )}
+            aria-hidden="true"
+          >
             {#if screen > i + 1}
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+              <Check class="size-3.5" strokeWidth={3.2} />
             {:else}
               {i + 1}
             {/if}
           </span>
-          <span class="step-label">{label}</span>
+          <span
+            class={cn(
+              'text-[13px] font-semibold whitespace-nowrap sm:text-sm',
+              screen === i + 1 ? 'text-primary' : screen > i + 1 ? 'text-success' : 'text-muted-foreground',
+            )}>{label}</span
+          >
         </li>
-        {#if i < stepLabels.length - 1}<li class="sep" aria-hidden="true"></li>{/if}
+        {#if i < stepLabels.length - 1}
+          <li class="h-0.5 min-w-2 flex-1 rounded bg-border sm:max-w-14" aria-hidden="true"></li>
+        {/if}
       {/each}
     </ol>
+
+    <main class="flex flex-1 flex-col">
+      {#if screen === 1}
+        <SelectScreen
+          {images}
+          {rejected}
+          onAdd={addFiles}
+          onRemove={removeImage}
+          onClear={clearImages}
+          onNext={() => (screen = 2)}
+        />
+      {:else if screen === 2}
+        <TargetScreen
+          bind:settings
+          count={images.length}
+          {busy}
+          {progressLabel}
+          onBack={() => (screen = 1)}
+          onCompress={startCompress}
+        />
+      {:else}
+        <ResultScreen
+          {results}
+          {failures}
+          onAgain={compressMore}
+          onBackToSettings={() => (screen = 2)}
+        />
+      {/if}
+    </main>
+
+    <footer class="pb-28 pt-2 text-center text-[13px] text-muted-foreground">
+      <p>{$t.app.footer}</p>
+    </footer>
   </div>
-
-  <main>
-    {#if screen === 1}
-      <SelectScreen
-        {images}
-        {rejected}
-        onAdd={addFiles}
-        onRemove={removeImage}
-        onClear={clearImages}
-        onNext={() => (screen = 2)}
-      />
-    {:else if screen === 2}
-      <TargetScreen
-        bind:settings
-        count={images.length}
-        {busy}
-        {progressLabel}
-        onBack={() => (screen = 1)}
-        onCompress={startCompress}
-      />
-    {:else}
-      <ResultScreen
-        {results}
-        {failures}
-        onAgain={compressMore}
-        onBackToSettings={() => (screen = 2)}
-      />
-    {/if}
-  </main>
-
-  <footer>
-    <p>{$t.app.footer}</p>
-  </footer>
 </div>
-
-<style>
-  .topbar {
-    position: sticky;
-    top: 0;
-    z-index: 30;
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-  }
-  .topbar-inner {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 0 clamp(16px, 4vw, 28px);
-    height: var(--header-h);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    min-width: 0;
-  }
-  .logo {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: var(--primary);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-    box-shadow: var(--shadow-sm);
-  }
-  .brand-text h1 {
-    margin: 0;
-    font-size: 1.28rem;
-    font-weight: 750;
-    line-height: 1.1;
-  }
-  .brand-text p {
-    margin: 0;
-    color: var(--text-2);
-    font-size: 0.8rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    flex: none;
-  }
-  .lang-switch {
-    display: flex;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 3px;
-    gap: 2px;
-  }
-  .lang-switch button {
-    border: none;
-    background: transparent;
-    color: var(--text-2);
-    font-weight: 700;
-    font-size: 0.83rem;
-    min-height: 32px;
-    padding: 5px 13px;
-    border-radius: 999px;
-  }
-  .lang-switch button.active {
-    background: var(--primary);
-    color: #fff;
-  }
-  .icon-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .icon-btn:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-  }
-
-  .shell {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 22px clamp(16px, 4vw, 28px) 28px;
-    display: flex;
-    flex-direction: column;
-    gap: clamp(16px, 2.6vw, 24px);
-    min-height: calc(100vh - var(--header-h));
-  }
-  .subhead {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .privacy {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--success);
-    background: var(--success-soft);
-    border: 1px solid color-mix(in srgb, var(--success) 22%, transparent);
-    border-radius: 12px;
-    padding: 9px 13px;
-    font-size: 0.88rem;
-    font-weight: 600;
-  }
-  .privacy svg {
-    flex: none;
-  }
-  .steps {
-    list-style: none;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0;
-    padding: 0;
-    color: var(--text-3);
-    font-weight: 600;
-    font-size: 0.92rem;
-  }
-  .steps li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .steps .dot {
-    width: 26px;
-    height: 26px;
-    border-radius: 999px;
-    border: 2px solid var(--border);
-    background: var(--surface);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    flex: none;
-  }
-  .steps li.active {
-    color: var(--primary);
-  }
-  .steps li.active .dot {
-    border-color: var(--primary);
-    background: var(--primary);
-    color: #fff;
-  }
-  .steps li.done {
-    color: var(--success);
-  }
-  .steps li.done .dot {
-    border-color: var(--success);
-    background: var(--success);
-    color: #fff;
-  }
-  .steps .sep {
-    flex: 1;
-    max-width: 56px;
-    height: 2px;
-    background: var(--border);
-    border-radius: 2px;
-  }
-  main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-  footer {
-    color: var(--text-3);
-    font-size: 0.85rem;
-    text-align: center;
-    padding-top: 6px;
-  }
-  footer p {
-    margin: 0;
-  }
-
-  @media (max-width: 639px) {
-    .brand-text p {
-      display: none;
-    }
-    .steps {
-      font-size: 0.85rem;
-      gap: 7px;
-    }
-    .steps .dot {
-      width: 23px;
-      height: 23px;
-    }
-    .privacy {
-      font-size: 0.82rem;
-    }
-  }
-</style>

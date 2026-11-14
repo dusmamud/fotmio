@@ -2,6 +2,18 @@
   import { formatBytes } from './format'
   import { interpolate, t } from './i18n'
   import type { SelectedImage } from './models'
+  import { Alert, AlertDescription } from '$lib/components/ui/alert'
+  import { Button } from '$lib/components/ui/button'
+  import { Card, CardContent } from '$lib/components/ui/card'
+  import { cn } from '$lib/utils'
+  import ArrowRight from 'lucide-svelte/icons/arrow-right'
+  import CircleAlert from 'lucide-svelte/icons/circle-alert'
+  import CloudUpload from 'lucide-svelte/icons/cloud-upload'
+  import Layers from 'lucide-svelte/icons/layers'
+  import Plus from 'lucide-svelte/icons/plus'
+  import ShieldCheck from 'lucide-svelte/icons/shield-check'
+  import X from 'lucide-svelte/icons/x'
+  import Zap from 'lucide-svelte/icons/zap'
 
   interface Props {
     images: SelectedImage[]
@@ -29,26 +41,32 @@
     dragging = false
     if (event.dataTransfer) onAdd(Array.from(event.dataTransfer.files))
   }
+
+  function openPicker() {
+    inputEl?.click()
+  }
 </script>
 
-<section class="screen">
-  <div class="screen-head">
-    <h2>{$t.select.heading}</h2>
-    <p>{$t.select.intro}</p>
+<section class="flex flex-col gap-4 sm:gap-5">
+  <div>
+    <h2 class="text-xl font-bold tracking-tight sm:text-2xl">{$t.select.heading}</h2>
+    <p class="mt-1 text-sm text-muted-foreground sm:text-[15px]">{$t.select.intro}</p>
   </div>
 
   <div
-    class="dropzone"
-    class:dragging
-    class:compact={images.length > 0}
+    class={cn(
+      'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed bg-card px-4 text-center shadow-xs transition-colors hover:border-primary/60 hover:bg-accent/40',
+      images.length > 0 ? 'py-5 sm:py-6' : 'py-9 sm:py-14',
+      dragging && 'border-primary bg-accent/60',
+    )}
     role="button"
     tabindex="0"
     aria-label={$t.select.addImages}
-    onclick={() => inputEl?.click()}
+    onclick={openPicker}
     onkeydown={(e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
-        inputEl?.click()
+        openPicker()
       }
     }}
     ondragover={(e) => {
@@ -58,15 +76,13 @@
     ondragleave={() => (dragging = false)}
     ondrop={handleDrop}
   >
-    <div class="dz-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 16V4m0 0 4 4m-4-4L8 8" />
-        <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
-      </svg>
-    </div>
-    <p class="dz-title">{$t.select.dropTitle}</p>
-    <p class="dz-sub">
-      {$t.select.dropOr} <span class="dz-link">{$t.select.dropBrowse}</span>
+    <span class="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary sm:size-14" aria-hidden="true">
+      <CloudUpload class="size-6 sm:size-7" />
+    </span>
+    <p class="text-base font-semibold sm:text-lg">{$t.select.dropTitle}</p>
+    <p class="text-[13px] text-muted-foreground sm:text-sm">
+      {$t.select.dropOr}
+      <span class="font-semibold text-primary underline underline-offset-2">{$t.select.dropBrowse}</span>
       {$t.select.dropFormats}
     </p>
     <input
@@ -74,310 +90,120 @@
       type="file"
       accept="image/*"
       multiple
-      hidden
+      class="hidden"
       onchange={(e) => pickFiles(e.currentTarget.files)}
     />
   </div>
 
   {#if rejected.length > 0}
-    <p class="notice" role="status">
-      {interpolate(rejected.length === 1 ? $t.select.skippedOne : $t.select.skippedMany, {
-        count: rejected.length,
-        names: rejected.join(', '),
-      })}
-    </p>
+    <Alert variant="destructive">
+      <CircleAlert />
+      <AlertDescription>
+        {interpolate(rejected.length === 1 ? $t.select.skippedOne : $t.select.skippedMany, {
+          count: rejected.length,
+          names: rejected.join(', '),
+        })}
+      </AlertDescription>
+    </Alert>
   {/if}
 
   {#if images.length > 0}
-    <div class="grid">
+    <ul class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
       {#each images as img (img.id)}
-        <figure class="card">
-          <img src={img.url} alt={img.file.name} loading="lazy" />
-          <button
-            class="remove"
-            type="button"
-            title={interpolate($t.select.remove, { name: img.file.name })}
+        <li class="relative rounded-xl border bg-card p-1.5 shadow-xs">
+          <img
+            class="aspect-[4/3] w-full rounded-lg object-cover"
+            src={img.url}
+            alt={img.file.name}
+          />
+          <Button
+            variant="secondary"
+            size="icon"
+            class="absolute top-2 right-2 size-7 rounded-full shadow-sm"
+            onclick={() => onRemove(img.id)}
             aria-label={interpolate($t.select.remove, { name: img.file.name })}
-            onclick={() => onRemove(img.id)}>×</button
           >
-          <figcaption>
-            <span class="name" title={img.file.name}>{img.file.name}</span>
-            <span class="facts">{formatBytes(img.file.size)} · {img.width}×{img.height}</span>
-          </figcaption>
-        </figure>
+            <X class="size-4" />
+          </Button>
+          <div class="px-1 pt-1.5 pb-0.5">
+            <p class="truncate text-[13px] font-medium">{img.file.name}</p>
+            <p class="text-xs text-muted-foreground">
+              {formatBytes(img.file.size)} · {img.width}×{img.height}
+            </p>
+          </div>
+        </li>
       {/each}
-      <button type="button" class="add-card" onclick={() => inputEl?.click()}>
-        <span class="add-plus" aria-hidden="true">+</span>
-        <span>{$t.select.addMore}</span>
-      </button>
-    </div>
-
-    <div class="actionbar">
-      <p class="info">
-        {interpolate(images.length === 1 ? $t.select.selectedOne : $t.select.selectedMany, {
-          count: images.length,
-          total: formatBytes(totalBytes),
-        })}
-      </p>
-      <div class="actions">
-        <button type="button" class="btn ghost" onclick={onClear}>{$t.select.clearAll}</button>
-        <button type="button" class="btn primary" onclick={onNext}>{$t.select.continue}</button>
+      <li class="flex">
+        <div
+          class="flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input py-4 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+          role="button"
+          tabindex="0"
+          aria-label={$t.select.addMore}
+          onclick={openPicker}
+          onkeydown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              openPicker()
+            }
+          }}
+        >
+          <Plus class="size-6" />
+          <span class="text-sm font-medium">{$t.select.addMore}</span>
+        </div>
+      </li>
+    </ul>
+  {:else}
+    <div class="flex flex-col gap-2.5">
+      <h3 class="text-[13px] font-semibold tracking-wider text-muted-foreground uppercase">
+        {$t.select.features.heading}
+      </h3>
+      <div class="grid gap-3 sm:grid-cols-3">
+        <Card class="gap-0 py-4">
+          <CardContent class="flex flex-col gap-1.5 px-4">
+            <span class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <ShieldCheck class="size-5" />
+            </span>
+            <p class="text-sm font-semibold">{$t.select.features.offlineTitle}</p>
+            <p class="text-[13px] leading-snug text-muted-foreground">{$t.select.features.offlineText}</p>
+          </CardContent>
+        </Card>
+        <Card class="gap-0 py-4">
+          <CardContent class="flex flex-col gap-1.5 px-4">
+            <span class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Zap class="size-5" />
+            </span>
+            <p class="text-sm font-semibold">{$t.select.features.speedTitle}</p>
+            <p class="text-[13px] leading-snug text-muted-foreground">{$t.select.features.speedText}</p>
+          </CardContent>
+        </Card>
+        <Card class="gap-0 py-4">
+          <CardContent class="flex flex-col gap-1.5 px-4">
+            <span class="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Layers class="size-5" />
+            </span>
+            <p class="text-sm font-semibold">{$t.select.features.batchTitle}</p>
+            <p class="text-[13px] leading-snug text-muted-foreground">{$t.select.features.batchText}</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  {:else}
-    <div class="features">
-      <h3>{$t.select.features.heading}</h3>
-      <div class="feature-grid">
-        <div class="feature">
-          <span class="f-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-3.6 8-10V5l-8-3-8 3v7c0 6.4 8 10 8 10z" />
-              <path d="m9 11.5 2 2 4-4" />
-            </svg>
-          </span>
-          <strong>{$t.select.features.offlineTitle}</strong>
-          <p>{$t.select.features.offlineText}</p>
-        </div>
-        <div class="feature">
-          <span class="f-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z" />
-            </svg>
-          </span>
-          <strong>{$t.select.features.speedTitle}</strong>
-          <p>{$t.select.features.speedText}</p>
-        </div>
-        <div class="feature">
-          <span class="f-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
-              <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" />
-              <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" />
-              <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" />
-            </svg>
-          </span>
-          <strong>{$t.select.features.batchTitle}</strong>
-          <p>{$t.select.features.batchText}</p>
-        </div>
+  {/if}
+
+  {#if images.length > 0}
+    <div class="fixed inset-x-0 bottom-0 z-40 border-t bg-background/85 backdrop-blur-md">
+      <div class="mx-auto flex w-full max-w-[1080px] items-center gap-2 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:gap-3 sm:px-6">
+        <span class="mr-auto min-w-0 truncate text-sm font-medium">
+          {interpolate(images.length === 1 ? $t.select.selectedOne : $t.select.selectedMany, {
+            count: images.length,
+            total: formatBytes(totalBytes),
+          })}
+        </span>
+        <Button variant="outline" onclick={onClear}>{$t.select.clearAll}</Button>
+        <Button size="lg" class="flex-1 sm:flex-none" onclick={onNext}>
+          {$t.select.continue}
+          <ArrowRight />
+        </Button>
       </div>
     </div>
   {/if}
 </section>
-
-<style>
-  .dropzone {
-    border: 2px dashed var(--border-strong);
-    border-radius: var(--radius);
-    background: var(--surface);
-    box-shadow: var(--shadow-sm);
-    padding: clamp(34px, 6vw, 56px) 20px;
-    text-align: center;
-    cursor: pointer;
-    transition:
-      border-color 0.15s,
-      background 0.15s,
-      box-shadow 0.15s;
-  }
-  .dropzone:hover,
-  .dropzone:focus-visible {
-    border-color: var(--primary);
-    box-shadow: var(--shadow);
-    outline: none;
-  }
-  .dropzone.dragging {
-    border-color: var(--primary);
-    background: var(--primary-soft);
-  }
-  .dropzone.compact {
-    padding: 20px;
-  }
-  .dropzone.compact .dz-icon {
-    width: 42px;
-    height: 42px;
-  }
-  .dropzone.compact .dz-title {
-    font-size: 1rem;
-  }
-  .dz-icon {
-    width: 62px;
-    height: 62px;
-    margin: 0 auto 12px;
-    border-radius: 999px;
-    background: var(--primary-soft);
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .dz-title {
-    margin: 0;
-    font-size: clamp(1.05rem, 1rem + 0.6vw, 1.25rem);
-    font-weight: 700;
-  }
-  .dz-sub {
-    margin: 5px 0 0;
-    color: var(--text-2);
-    font-size: 0.94rem;
-  }
-  .dz-link {
-    color: var(--primary);
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  .notice {
-    margin: 0;
-    padding: 11px 14px;
-    border-radius: var(--radius-sm);
-    background: var(--warning-soft);
-    border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
-    color: var(--warning);
-    font-size: 0.9rem;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(168px, 46vw), 1fr));
-    gap: 14px;
-  }
-  .card {
-    margin: 0;
-    position: relative;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    transition: box-shadow 0.15s;
-  }
-  .card:hover {
-    box-shadow: var(--shadow);
-  }
-  .card img {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    object-fit: cover;
-    background: var(--surface-2);
-  }
-  .card figcaption {
-    padding: 9px 11px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .name {
-    font-size: 0.86rem;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .facts {
-    font-size: 0.79rem;
-    color: var(--text-2);
-    font-variant-numeric: tabular-nums;
-  }
-  .remove {
-    position: absolute;
-    top: 7px;
-    right: 7px;
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 999px;
-    background: rgb(15 23 42 / 0.72);
-    color: #fff;
-    font-size: 1.05rem;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s;
-  }
-  .remove:hover {
-    background: var(--danger);
-  }
-  .add-card {
-    min-height: 132px;
-    border: 2px dashed var(--border-strong);
-    border-radius: var(--radius);
-    background: transparent;
-    color: var(--text-2);
-    font-weight: 600;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    transition:
-      border-color 0.15s,
-      color 0.15s;
-  }
-  .add-card:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-  }
-  .add-plus {
-    font-size: 1.7rem;
-    font-weight: 400;
-    line-height: 1;
-  }
-
-  .features h3 {
-    margin: 0 0 12px;
-    font-size: 1.02rem;
-    font-weight: 700;
-  }
-  .feature-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-  }
-  .feature {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-sm);
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  .f-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 11px;
-    background: var(--primary-soft);
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 5px;
-  }
-  .feature strong {
-    font-size: 0.97rem;
-  }
-  .feature p {
-    margin: 0;
-    color: var(--text-2);
-    font-size: 0.89rem;
-  }
-
-  @media (max-width: 639px) {
-    .feature-grid {
-      grid-template-columns: 1fr;
-    }
-    .feature {
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: center;
-      column-gap: 12px;
-    }
-    .f-icon {
-      margin-bottom: 0;
-    }
-    .feature p {
-      flex-basis: 100%;
-    }
-  }
-</style>

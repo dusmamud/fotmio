@@ -3,6 +3,14 @@
   import { interpolate, t, type Dictionary } from './i18n'
   import type { FailedPhoto, PhotoResult } from './models'
   import ResultCard from './ResultCard.svelte'
+  import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert'
+  import { Badge } from '$lib/components/ui/badge'
+  import { Button } from '$lib/components/ui/button'
+  import { Card, CardContent } from '$lib/components/ui/card'
+  import ArrowLeft from 'lucide-svelte/icons/arrow-left'
+  import ArrowRight from 'lucide-svelte/icons/arrow-right'
+  import CircleAlert from 'lucide-svelte/icons/circle-alert'
+  import Images from 'lucide-svelte/icons/images'
 
   interface Props {
     results: PhotoResult[]
@@ -16,172 +24,96 @@
   const totalOriginal = $derived(results.reduce((s, r) => s + r.originalBytes, 0))
   const totalOutput = $derived(results.reduce((s, r) => s + r.meta.outputBytes, 0))
 
-  function summaryText(dict: Dictionary): string {
+  function savingsText(dict: Dictionary): string {
     const pct = savingsPercent(totalOriginal, totalOutput)
     const percent = `${Math.abs(pct).toFixed(1)}%`
-    const savings =
-      pct > 0
-        ? interpolate(dict.results.smaller, { percent })
-        : pct < 0
-          ? interpolate(dict.results.larger, { percent })
-          : dict.results.sameSize
+    return pct > 0
+      ? interpolate(dict.results.smaller, { percent })
+      : pct < 0
+        ? interpolate(dict.results.larger, { percent })
+        : dict.results.sameSize
+  }
+
+  function summaryText(dict: Dictionary): string {
     return interpolate(results.length === 1 ? dict.results.summaryOne : dict.results.summaryMany, {
       count: results.length,
       original: formatBytes(totalOriginal),
       output: formatBytes(totalOutput),
-      savings,
+      savings: savingsText(dict),
     })
   }
 </script>
 
-<section class="screen">
-  <div class="screen-head">
-    <h2>{$t.results.heading}</h2>
+<section class="flex flex-col gap-4 sm:gap-5">
+  <div>
+    <h2 class="text-xl font-bold tracking-tight sm:text-2xl">{$t.results.heading}</h2>
     {#if results.length > 0}
-      <p class="summary-line">{summaryText($t)}</p>
+      <p class="mt-1 text-sm text-muted-foreground sm:text-[15px]">{summaryText($t)}</p>
     {:else}
-      <p>{$t.results.noneCompressed}</p>
+      <p class="mt-1 text-sm text-muted-foreground sm:text-[15px]">{$t.results.noneCompressed}</p>
     {/if}
   </div>
 
   {#if results.length > 0}
-    <div class="summary-card">
-      <div class="stat">
-        <span class="stat-label">{$t.resultCard.before}</span>
-        <span class="stat-value">{formatBytes(totalOriginal)}</span>
-      </div>
-      <span class="arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16m-6-6 6 6-6 6" /></svg>
-      </span>
-      <div class="stat">
-        <span class="stat-label">{$t.resultCard.after}</span>
-        <span class="stat-value strong">{formatBytes(totalOutput)}</span>
-      </div>
-      <span class="saved-pill">
-        {(() => {
-          const pct = savingsPercent(totalOriginal, totalOutput)
-          const percent = `${Math.abs(pct).toFixed(1)}%`
-          return pct > 0
-            ? interpolate($t.results.smaller, { percent })
-            : pct < 0
-              ? interpolate($t.results.larger, { percent })
-              : $t.results.sameSize
-        })()}
-      </span>
-    </div>
+    <Card class="gap-0 py-0">
+      <CardContent class="flex flex-wrap items-center gap-x-5 gap-y-3 px-4 py-4 sm:px-6">
+        <div class="flex flex-col">
+          <span class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+            {$t.resultCard.before}
+          </span>
+          <span class="text-xl font-bold tabular-nums sm:text-2xl">{formatBytes(totalOriginal)}</span>
+        </div>
+        <ArrowRight class="hidden text-muted-foreground min-[400px]:block" aria-hidden="true" />
+        <div class="flex flex-col">
+          <span class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+            {$t.resultCard.after}
+          </span>
+          <span class="text-xl font-bold text-primary tabular-nums sm:text-2xl">
+            {formatBytes(totalOutput)}
+          </span>
+        </div>
+        <Badge variant="success" class="ml-auto px-2.5 py-1 text-[13px]">{savingsText($t)}</Badge>
+      </CardContent>
+    </Card>
   {/if}
 
   {#if failures.length > 0}
-    <div class="failures" role="alert">
-      <h3>
+    <Alert variant="destructive">
+      <CircleAlert />
+      <AlertTitle>
         {interpolate(
           failures.length === 1 ? $t.results.failedHeadingOne : $t.results.failedHeadingMany,
           { count: failures.length },
         )}
-      </h3>
-      <ul>
-        {#each failures as f (f.name)}
-          <li><strong>{f.name}</strong> — {f.message}</li>
-        {/each}
-      </ul>
-    </div>
+      </AlertTitle>
+      <AlertDescription>
+        <ul class="list-disc pl-4">
+          {#each failures as f (f.name)}
+            <li><strong>{f.name}</strong> — {f.message}</li>
+          {/each}
+        </ul>
+      </AlertDescription>
+    </Alert>
   {/if}
 
   {#if results.length > 0}
-    <div class="grid">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {#each results as result (result.id)}
         <ResultCard {result} />
       {/each}
     </div>
   {/if}
 
-  <div class="actionbar">
-    <div class="actions">
-      <button type="button" class="btn ghost" onclick={onBackToSettings}>
+  <div class="fixed inset-x-0 bottom-0 z-40 border-t bg-background/85 backdrop-blur-md">
+    <div class="mx-auto flex w-full max-w-[1080px] items-center gap-2 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:gap-3 sm:px-6">
+      <Button variant="outline" onclick={onBackToSettings}>
+        <ArrowLeft />
         {$t.results.backToSettings}
-      </button>
-    </div>
-    <div class="actions">
-      <button type="button" class="btn primary" onclick={onAgain}>
+      </Button>
+      <Button size="lg" class="flex-1 sm:flex-none" onclick={onAgain}>
+        <Images />
         {$t.results.compressMore}
-      </button>
+      </Button>
     </div>
   </div>
 </section>
-
-<style>
-  .summary-line {
-    font-size: 1.02rem;
-    color: var(--text-2);
-  }
-  .summary-card {
-    display: flex;
-    align-items: center;
-    gap: clamp(12px, 3vw, 22px);
-    flex-wrap: wrap;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: clamp(16px, 3vw, 22px);
-  }
-  .stat {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .stat-label {
-    font-size: 0.74rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-3);
-  }
-  .stat-value {
-    font-size: clamp(1.25rem, 1.1rem + 1vw, 1.6rem);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-  .stat-value.strong {
-    color: var(--primary);
-  }
-  .arrow {
-    color: var(--text-3);
-    display: flex;
-  }
-  .saved-pill {
-    margin-left: auto;
-    background: var(--success-soft);
-    color: var(--success);
-    border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
-    font-weight: 700;
-    font-size: 0.95rem;
-    border-radius: 999px;
-    padding: 7px 15px;
-  }
-  .failures {
-    background: var(--danger-soft);
-    border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
-    border-radius: var(--radius);
-    padding: 15px 18px;
-    color: var(--danger);
-  }
-  .failures h3 {
-    margin: 0 0 6px;
-    font-size: 1rem;
-  }
-  .failures ul {
-    margin: 0;
-    padding-left: 18px;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));
-    gap: 16px;
-  }
-  @media (max-width: 520px) {
-    .saved-pill {
-      margin-left: 0;
-    }
-  }
-</style>

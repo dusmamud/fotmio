@@ -2,6 +2,26 @@
   import type { EngineFormat, EngineMode } from '../engine'
   import { interpolate, t } from './i18n'
   import type { UiSettings } from './models'
+  import { Badge } from '$lib/components/ui/badge'
+  import { Button } from '$lib/components/ui/button'
+  import { Card, CardContent } from '$lib/components/ui/card'
+  import { Input } from '$lib/components/ui/input'
+  import { Label } from '$lib/components/ui/label'
+  import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from '$lib/components/ui/select'
+  import { Separator } from '$lib/components/ui/separator'
+  import { Slider } from '$lib/components/ui/slider'
+  import { Switch } from '$lib/components/ui/switch'
+  import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs'
+  import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group'
+  import ArrowLeft from 'lucide-svelte/icons/arrow-left'
+  import LoaderCircle from 'lucide-svelte/icons/loader-circle'
 
   interface Props {
     settings: UiSettings
@@ -26,10 +46,6 @@
 
   type PresetId = 'ssc' | 'upsc' | 'passport'
   let activePreset = $state<PresetId | null>(null)
-
-  function setMode(mode: EngineMode) {
-    settings.mode = mode
-  }
 
   function applyPreset(id: PresetId) {
     activePreset = id
@@ -66,359 +82,201 @@
   }
 </script>
 
-<section class="screen">
-  <div class="screen-head">
-    <h2>{$t.target.heading}</h2>
-    <p>
+<section class="flex flex-col gap-4 sm:gap-5">
+  <div>
+    <h2 class="text-xl font-bold tracking-tight sm:text-2xl">{$t.target.heading}</h2>
+    <p class="mt-1 text-sm text-muted-foreground sm:text-[15px]">
       {count === 1
         ? $t.target.appliedOne
         : interpolate($t.target.appliedMany, { count })}
     </p>
   </div>
 
-  <div class="seg" role="tablist" aria-label={$t.target.modeAria}>
-    <button
-      type="button"
-      role="tab"
-      aria-selected={settings.mode === 'target'}
-      class:active={settings.mode === 'target'}
-      onclick={() => setMode('target')}>{$t.target.tabs.target}</button
-    >
-    <button
-      type="button"
-      role="tab"
-      aria-selected={settings.mode === 'quality'}
-      class:active={settings.mode === 'quality'}
-      onclick={() => setMode('quality')}>{$t.target.tabs.quality}</button
-    >
-    <button
-      type="button"
-      role="tab"
-      aria-selected={settings.mode === 'maxDimension'}
-      class:active={settings.mode === 'maxDimension'}
-      onclick={() => setMode('maxDimension')}>{$t.target.tabs.resize}</button
-    >
-  </div>
-  <p class="mode-help">{$t.target.help[settings.mode]}</p>
+  <Tabs
+    value={settings.mode}
+    onValueChange={(v) => (settings.mode = v as EngineMode)}
+    class="w-full"
+  >
+    <TabsList aria-label={$t.target.modeAria}>
+      <TabsTrigger value="target">{$t.target.tabs.target}</TabsTrigger>
+      <TabsTrigger value="quality">{$t.target.tabs.quality}</TabsTrigger>
+      <TabsTrigger value="maxDimension">{$t.target.tabs.resize}</TabsTrigger>
+    </TabsList>
+    <p class="text-sm text-muted-foreground">{$t.target.help[settings.mode]}</p>
 
-  <div class="layout">
-    <div class="panel main-panel">
-      {#if settings.mode === 'target'}
-        <div class="field">
-          <span class="label" id="presets-label">{$t.target.presets.label}</span>
-          <div class="chips" role="group" aria-labelledby="presets-label">
-            <button
-              type="button"
-              class="chip preset"
-              class:active={activePreset === 'ssc'}
-              onclick={() => applyPreset('ssc')}>{$t.target.presets.ssc}</button
+    <div class="mt-2 grid items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
+      <Card class="gap-0 py-0">
+        <CardContent class="flex flex-col gap-5 px-4 py-5 sm:px-6">
+          <TabsContent value="target" class="mt-0">
+            <div class="flex flex-col gap-5">
+              <div class="flex flex-col gap-2">
+                <Label>{$t.target.presets.label}</Label>
+                <ToggleGroup
+                  value={activePreset ?? ''}
+                  onValueChange={(v) => v && applyPreset(v as PresetId)}
+                >
+                  <ToggleGroupItem value="ssc" class="border-dashed data-[state=on]:border-solid">
+                    {$t.target.presets.ssc}
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="upsc" class="border-dashed data-[state=on]:border-solid">
+                    {$t.target.presets.upsc}
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="passport" class="border-dashed data-[state=on]:border-solid">
+                    {$t.target.presets.passport}
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              <div class="flex flex-col gap-2">
+                <Label>{$t.target.targetSize}</Label>
+                <ToggleGroup
+                  value={activePreset === null ? String(settings.targetKB) : ''}
+                  onValueChange={(v) => v && pickChip(Number(v))}
+                >
+                  {#each CHIPS as chip (chip.kb)}
+                    <ToggleGroupItem value={String(chip.kb)}>{chip.label}</ToggleGroupItem>
+                  {/each}
+                </ToggleGroup>
+              </div>
+              <div class="flex flex-col gap-2">
+                <Label for="custom-kb">{$t.target.customSize}</Label>
+                <div class="flex max-w-56 items-center gap-2">
+                  <Input
+                    id="custom-kb"
+                    type="number"
+                    min="5"
+                    max="51200"
+                    step="1"
+                    bind:value={settings.targetKB}
+                    oninput={() => (activePreset = null)}
+                  />
+                  <span class="text-sm font-medium text-muted-foreground">{$t.target.kb}</span>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="maxDimension" class="mt-0">
+            <div class="grid gap-4 min-[420px]:grid-cols-2">
+              <div class="flex flex-col gap-2">
+                <Label for="max-w">{$t.target.maxWidth}</Label>
+                <Input
+                  id="max-w"
+                  type="number"
+                  min="1"
+                  placeholder={$t.target.noLimit}
+                  value={dimensionValue(settings.maxWidth)}
+                  oninput={(e) => (settings.maxWidth = parseDimension(e.currentTarget.value))}
+                />
+              </div>
+              <div class="flex flex-col gap-2">
+                <Label for="max-h">{$t.target.maxHeight}</Label>
+                <Input
+                  id="max-h"
+                  type="number"
+                  min="1"
+                  placeholder={$t.target.noLimit}
+                  value={dimensionValue(settings.maxHeight)}
+                  oninput={(e) => (settings.maxHeight = parseDimension(e.currentTarget.value))}
+                />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="quality" class="mt-0"></TabsContent>
+
+          <Separator />
+
+          <div class="flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <Label for="quality-slider">
+                {settings.mode === 'target' ? $t.target.qualityCap : $t.target.quality}
+              </Label>
+              <Badge variant="secondary" class="tabular-nums">{settings.quality}</Badge>
+            </div>
+            <Slider id="quality-slider" bind:value={settings.quality} min={1} max={100} step={1} />
+            <div class="flex justify-between text-xs text-muted-foreground">
+              <span>{$t.target.smallerFile}</span>
+              <span>{$t.target.betterQuality}</span>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <Switch id="strip-meta" bind:checked={settings.stripMetadata} />
+            <div class="flex flex-col gap-0.5">
+              <Label for="strip-meta">{$t.target.stripTitle}</Label>
+              <p class="text-[13px] text-muted-foreground">{$t.target.stripHelp}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card class="gap-0 py-0">
+        <CardContent class="flex flex-col gap-5 px-4 py-5 sm:px-6">
+          <div class="flex flex-col gap-2">
+            <Label for="format">{$t.target.outputFormat}</Label>
+            <Select
+              value={settings.format}
+              onValueChange={(v) => (settings.format = v as EngineFormat)}
             >
-            <button
-              type="button"
-              class="chip preset"
-              class:active={activePreset === 'upsc'}
-              onclick={() => applyPreset('upsc')}>{$t.target.presets.upsc}</button
-            >
-            <button
-              type="button"
-              class="chip preset"
-              class:active={activePreset === 'passport'}
-              onclick={() => applyPreset('passport')}>{$t.target.presets.passport}</button
-            >
+              <SelectTrigger id="format" class="w-full">
+                <SelectValue placeholder={$t.target.sameAsOriginal}>
+                  {settings.format === 'same'
+                    ? $t.target.sameAsOriginal
+                    : settings.format.toUpperCase()}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="same" label={$t.target.sameAsOriginal} />
+                  <SelectItem value="jpeg" label="JPEG" />
+                  <SelectItem value="webp" label="WebP" />
+                  <SelectItem value="png" label="PNG" />
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <p class="text-[13px] text-muted-foreground">{formatHelp(settings.format)}</p>
           </div>
-        </div>
-        <div class="field">
-          <span class="label" id="chips-label">{$t.target.targetSize}</span>
-          <div class="chips" role="group" aria-labelledby="chips-label">
-            {#each CHIPS as chip (chip.kb)}
-              <button
-                type="button"
-                class="chip"
-                class:active={activePreset === null && settings.targetKB === chip.kb}
-                onclick={() => pickChip(chip.kb)}>{chip.label}</button
-              >
-            {/each}
-          </div>
-        </div>
-        <div class="field narrow">
-          <label class="label" for="custom-kb">{$t.target.customSize}</label>
-          <div class="input-suffix">
-            <input
-              id="custom-kb"
-              class="input"
-              type="number"
-              min="5"
-              max="51200"
-              step="1"
-              bind:value={settings.targetKB}
-              oninput={() => (activePreset = null)}
-            />
-            <span>{$t.target.kb}</span>
-          </div>
-        </div>
-      {/if}
 
-      {#if settings.mode === 'maxDimension'}
-        <div class="dims">
-          <div class="field">
-            <label class="label" for="max-w">{$t.target.maxWidth}</label>
-            <input
-              id="max-w"
-              class="input"
-              type="number"
-              min="1"
-              placeholder={$t.target.noLimit}
-              value={dimensionValue(settings.maxWidth)}
-              oninput={(e) => (settings.maxWidth = parseDimension(e.currentTarget.value))}
-            />
-          </div>
-          <div class="field">
-            <label class="label" for="max-h">{$t.target.maxHeight}</label>
-            <input
-              id="max-h"
-              class="input"
-              type="number"
-              min="1"
-              placeholder={$t.target.noLimit}
-              value={dimensionValue(settings.maxHeight)}
-              oninput={(e) => (settings.maxHeight = parseDimension(e.currentTarget.value))}
-            />
-          </div>
-        </div>
-      {/if}
-
-      <div class="field">
-        <label class="label" for="quality">
-          {settings.mode === 'target' ? $t.target.qualityCap : $t.target.quality}
-          <span class="value">{settings.quality}</span>
-        </label>
-        <input id="quality" type="range" min="1" max="100" step="1" bind:value={settings.quality} />
-        <div class="range-scale"><span>{$t.target.smallerFile}</span><span>{$t.target.betterQuality}</span></div>
-      </div>
-
-      <label class="toggle">
-        <input type="checkbox" bind:checked={settings.stripMetadata} />
-        <span class="track" aria-hidden="true"></span>
-        <span class="toggle-text">
-          <strong>{$t.target.stripTitle}</strong>
-          <small>{$t.target.stripHelp}</small>
-        </span>
-      </label>
+          {#if settings.format !== 'png'}
+            <div class="flex flex-col gap-2">
+              <Label for="bg-color">{$t.target.backgroundFill}</Label>
+              <div class="flex items-center gap-2">
+                <input
+                  id="bg-color"
+                  type="color"
+                  bind:value={settings.background}
+                  class="h-10 w-12 shrink-0 cursor-pointer rounded-md border border-input bg-background p-1 shadow-xs"
+                />
+                <Input
+                  type="text"
+                  class="w-28 lowercase"
+                  bind:value={settings.background}
+                  aria-label={$t.target.backgroundHexAria}
+                  spellcheck="false"
+                />
+              </div>
+              <p class="text-[13px] text-muted-foreground">{$t.target.backgroundHelp}</p>
+            </div>
+          {/if}
+        </CardContent>
+      </Card>
     </div>
+  </Tabs>
 
-    <div class="panel side-panel">
-      <div class="field">
-        <label class="label" for="format">{$t.target.outputFormat}</label>
-        <select id="format" class="input" bind:value={settings.format}>
-          <option value="same">{$t.target.sameAsOriginal}</option>
-          <option value="jpeg">JPEG</option>
-          <option value="webp">WebP</option>
-          <option value="png">PNG</option>
-        </select>
-        <p class="help">{formatHelp(settings.format)}</p>
-      </div>
-
-      {#if settings.format !== 'png'}
-        <div class="field">
-          <label class="label" for="bg">{$t.target.backgroundFill}</label>
-          <div class="color-row">
-            <input id="bg" type="color" bind:value={settings.background} />
-            <input
-              type="text"
-              class="input hex"
-              bind:value={settings.background}
-              aria-label={$t.target.backgroundHexAria}
-              spellcheck="false"
-            />
-          </div>
-          <p class="help">{$t.target.backgroundHelp}</p>
-        </div>
-      {/if}
-    </div>
-  </div>
-
-  <div class="actionbar">
-    <div class="actions">
-      <button type="button" class="btn ghost" onclick={onBack} disabled={busy}>
+  <div class="fixed inset-x-0 bottom-0 z-40 border-t bg-background/85 backdrop-blur-md">
+    <div class="mx-auto flex w-full max-w-[1080px] items-center gap-2 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:gap-3 sm:px-6">
+      <Button variant="outline" onclick={onBack} disabled={busy}>
+        <ArrowLeft />
         {$t.target.back}
-      </button>
-    </div>
-    <div class="actions">
-      <button type="button" class="btn primary lg" onclick={onCompress} disabled={busy || count === 0}>
+      </Button>
+      <Button size="lg" class="flex-1 sm:flex-none" onclick={onCompress} disabled={busy || count === 0}>
         {#if busy}
-          <span class="spinner" aria-hidden="true"></span>
+          <LoaderCircle class="animate-spin" />
           {progressLabel || $t.target.compressing}
         {:else}
           {interpolate(count === 1 ? $t.target.compressOne : $t.target.compressMany, { count })}
         {/if}
-      </button>
+      </Button>
     </div>
   </div>
 </section>
-
-<style>
-  .mode-help {
-    margin: -8px 0 0;
-    color: var(--text-2);
-    max-width: 65ch;
-  }
-  .layout {
-    display: grid;
-    grid-template-columns: 1.65fr 1fr;
-    gap: 16px;
-    align-items: start;
-  }
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: clamp(16px, 2.6vw, 24px);
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-  }
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .chip.preset {
-    border-style: dashed;
-  }
-  .chip.preset.active {
-    border-style: solid;
-  }
-  .field.narrow {
-    max-width: 240px;
-  }
-  .input-suffix {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-  }
-  .input-suffix span {
-    color: var(--text-2);
-    font-weight: 600;
-  }
-  .dims {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-  input[type='range'] {
-    width: 100%;
-    height: 32px;
-    accent-color: var(--primary);
-    cursor: pointer;
-  }
-  .range-scale {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: var(--text-3);
-    margin-top: -6px;
-  }
-  .color-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  input[type='color'] {
-    width: 54px;
-    height: 46px;
-    padding: 2px;
-    border: 1px solid var(--border);
-    border-radius: 11px;
-    background: var(--surface);
-    cursor: pointer;
-    flex: none;
-  }
-  .hex {
-    max-width: 130px;
-    text-transform: lowercase;
-  }
-  .toggle {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    cursor: pointer;
-    padding-top: 2px;
-  }
-  .toggle input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  .toggle .track {
-    flex: none;
-    width: 48px;
-    height: 28px;
-    border-radius: 999px;
-    background: var(--surface-3);
-    position: relative;
-    transition: background 0.15s;
-    margin-top: 1px;
-  }
-  .toggle .track::after {
-    content: '';
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 22px;
-    height: 22px;
-    border-radius: 999px;
-    background: var(--surface);
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.15s;
-  }
-  .toggle input:checked + .track {
-    background: var(--primary);
-  }
-  .toggle input:checked + .track::after {
-    transform: translateX(20px);
-    background: #fff;
-  }
-  .toggle input:focus-visible + .track {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
-  .toggle-text {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .toggle-text strong {
-    font-size: 0.95rem;
-  }
-  .toggle-text small {
-    color: var(--text-2);
-    font-size: 0.86rem;
-  }
-  .spinner {
-    width: 17px;
-    height: 17px;
-    border-radius: 999px;
-    border: 2.5px solid rgb(255 255 255 / 0.35);
-    border-top-color: #fff;
-    animation: spin 0.7s linear infinite;
-    flex: none;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (max-width: 860px) {
-    .layout {
-      grid-template-columns: 1fr;
-    }
-  }
-  @media (max-width: 560px) {
-    .dims {
-      grid-template-columns: 1fr;
-    }
-  }
-</style>
