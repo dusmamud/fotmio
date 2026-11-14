@@ -223,11 +223,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-      - name: Setup JDK 17
+      - name: Setup JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          # Capacitor 8 ka Android code Java 21 source level mangta hai;
+          # JDK 17 par 'invalid source release: 21' error aata hai.
+          java-version: '21'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -412,7 +414,7 @@ jobs:
     name: Release · GitHub Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [web, desktop]
+    needs: [web, desktop, android, ios]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
@@ -437,4 +439,6 @@ jobs:
             artifacts/fotmio-desktop-Windows/**/*.msi
             artifacts/fotmio-desktop-Windows/**/*.exe
             artifacts/fotmio-desktop-macOS/**/*.dmg
+            artifacts/fotmio-android/**/*.aab
+            artifacts/fotmio-android/**/*.apk
             artifacts/fotmio-web-${{ github.ref_name }}.zip
