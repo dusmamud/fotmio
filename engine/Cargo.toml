@@ -19,9 +19,13 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 wasm-bindgen = "0.2"
 kamadak-exif = "0.5"
+# Pure-Rust MozJPEG encoder (trellis + progressive + Huffman optimize).
+# wasm32 par bhi yahi chalta hai — web par bhi desktop-wali quality.
+mozjpeg-rs = "0.9"
 
-# Native-only encoders (C libraries). WASM build me ye compile nahi hote;
-# wahan image-crate fallback encoders use hote hain (dekho src/lib.rs + NOTES.md).
+# Native-only encoder (C library): WebP. WASM build me ye compile nahi
+# hota; wahan image-crate ka lossless WebP fallback use hota hai
+# (dekho src/lib.rs + NOTES.md). JPEG ab mozjpeg-rs (pure Rust) hai —
+# native + wasm dono par ek hi encoder.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-mozjpeg = { version = "0.10", default-features = false }
 webp = "0.3"

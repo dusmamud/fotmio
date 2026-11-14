@@ -10,7 +10,7 @@
 use std::cell::RefCell;
 use std::io::Cursor;
 
-#[cfg(any(target_arch = "wasm32", test))]
+#[cfg(test)]
 use image::codecs::jpeg::JpegEncoder;
 use image::codecs::png::PngEncoder;
 #[cfg(target_arch = "wasm32")]
@@ -330,34 +330,24 @@ fn encode(
     }
 }
 
-// --- JPEG: native = mozjpeg, wasm = image crate fallback -------------------
-
-#[cfg(not(target_arch = "wasm32"))]
+// --- JPEG: mozjpeg-rs (pure Rust MozJPEG) — sab platforms par ek hi encoder ---
+//
+// Pehle native par C mozjpeg aur wasm (web/mobile) par image crate ka basic
+// JpegEncoder tha. Woh basic encoder bina trellis/progressive/Huffman-optimize
+// ke itni badi files banata tha ki chhote targets (jaise 56 KB -> 20 KB) par
+// quality search kisi bhi quality par fit nahi hota tha aur engine chup-chaap
+// dimensions shrink kar deta tha — result bekar quality + chhoti dimensions.
+// mozjpeg-rs 100% safe Rust hai, isliye wasm32 par bhi wahi asal MozJPEG
+// (trellis quantization + progressive + optimized Huffman) chalta hai.
+// Benchmark (1280x575 photo, 56 KB -> 20 KB): purana web path q=6 + 1088x488
+// (PSNR 24.7 dB); mozjpeg-rs full-size q=15 (PSNR 28.1 dB), dimensions same.
 fn encode_jpeg(img: &DynamicImage, quality: u8) -> Result<Vec<u8>, String> {
     let rgb = img.to_rgb8();
     let (w, h) = rgb.dimensions();
-    let mut comp = mozjpeg::Compress::new(mozjpeg::ColorSpace::JCS_RGB);
-    comp.set_quality(quality as f32);
-    comp.set_progressive_mode();
-    comp.set_size(w as usize, h as usize);
-    let mut started = comp
-        .start_compress(Vec::new())
-        .map_err(|e| format!("mozjpeg start fail: {e}"))?;
-    started
-        .write_scanlines(rgb.as_raw())
-        .map_err(|e| format!("mozjpeg scanlines fail: {e}"))?;
-    started
-        .finish()
-        .map_err(|e| format!("mozjpeg finish fail: {e}"))
-}
-
-#[cfg(target_arch = "wasm32")]
-fn encode_jpeg(img: &DynamicImage, quality: u8) -> Result<Vec<u8>, String> {
-    // mozjpeg-sys (C build) wasm32 par nahi banta — image crate ka JPEG encoder.
-    let mut buf = Vec::new();
-    let encoder = JpegEncoder::new_with_quality(&mut buf, quality);
-    write_encoded(encoder, img).map_err(|e| format!("jpeg encode fail: {e}"))?;
-    Ok(buf)
+    mozjpeg_rs::Encoder::progressive_balanced()
+        .quality(quality)
+        .encode_rgb(rgb.as_raw(), w, h)
+        .map_err(|e| format!("mozjpeg encode fail: {e}"))
 }
 
 // --- WebP: native = libwebp (webp crate), wasm = image crate lossless -----

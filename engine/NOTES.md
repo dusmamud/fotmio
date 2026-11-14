@@ -29,7 +29,7 @@ Contract: `docs/ENGINE_API.md`. Options/Result JSON bilkul contract ke fields
 
 | Format | Native build (desktop/cdylib) | WASM build (web/mobile) |
 |---|---|---|
-| JPEG | **mozjpeg** crate (0.10.13, `default-features=false` — is sandbox me `nasm` nahi hai, isliye SIMD/nasm features band; progressive mode ON, quality = contract wali) | **image crate ka JpegEncoder** (fallback) — mozjpeg-sys ka C build wasm32 par nahi banta, isliye `#[cfg(target_arch = "wasm32")]` se alag path |
+| JPEG | **mozjpeg-rs** (pure Rust MozJPEG 0.9: trellis + progressive + optimized Huffman, `progressive_balanced` preset) — native + wasm EK HI encoder | wahi mozjpeg-rs (koi alag fallback nahi) |
 | WebP | **libwebp** (`webp` crate 0.3): quality < 100 par lossy (alpha background par flatten), quality ≥ 100 par lossless (alpha preserve) | **image crate ka WebPEncoder — sirf LOSSLESS** (fallback): wasm par WebP quality slider ka asar nahi padta aur alpha preserve rehta hai |
 | PNG | image crate PngEncoder — lossless re-encode (dono builds me yahi) | image crate PngEncoder — lossless re-encode |
 
@@ -83,3 +83,22 @@ orient aage) → resize → encode.
    abhi nahi hai) — rang halke dull ho sakte hain P3 photos par. v1.1 item.
 7. `compress_image` error par khaali Vec deta hai; wajah `last_result_json()`
    ke `{"error": ...}` me milti hai. UI ko khaali output = error samajhna hoga.
+
+## v2 fix (2026-11-14) — Web JPEG quality disaster
+
+User report: 56 KB photo ko 20 KB target par compress karne se result bekar
+(q=6, dimensions shrink) aa raha tha. Root cause: wasm par image crate ka
+basic JpegEncoder (no trellis, no progressive, no Huffman optimize) itni badi
+files banata tha ki 20 KB target kisi quality par fit hi nahi hota tha, aur
+target_search chup-chaap dimension fallback (x0.85) laga deta tha.
+
+Fix: JPEG encoder sab platforms par **mozjpeg-rs** (100% safe Rust, BSD-3,
+C MozJPEG ke byte-identical class output). C `mozjpeg` crate dep hata di.
+
+Benchmark (1280x575 real photo, input 56,827 B -> target 20,480 B):
+- Purana web path (image crate + fallback): 20,017 B, **q=6, 1088x488** (1 resize pass), PSNR 24.66 dB
+- Purana desktop path (C mozjpeg): 20,334 B, q=15, 1280x575, PSNR 28.23 dB
+- **Naya mozjpeg-rs (sab jagah)**: 19,882 B, q=15, **1280x575 (scale 1.0)**, PSNR 28.09 dB
+- WASM end-to-end (Node, wasm-pack build): targetMet=true, attempts=8, ~0.85 s
+- Scale sweep (0.85/0.72/0.61) par PSNR behtar nahi mila, isliye dimensions
+  full-size hi rakhe gaye; dimension fallback ab sirf last-resort hai.
