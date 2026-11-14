@@ -258,17 +258,20 @@ jobs:
         working-directory: mobile
         run: pnpm exec cap sync android
 
-      - name: Build AAB + APK (release)
+      - name: Build AAB + APK (debug)
         working-directory: mobile/android
-        run: ./gradlew bundleRelease assembleRelease
+        # Debug builds: user abhi testing/debugging phase me hai — debug APK
+        # direct install + debuggable hota hai. Release par wapas jaana ho to
+        # bundleRelease/assembleRelease + signing lagega.
+        run: ./gradlew bundleDebug assembleDebug
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: fotmio-android
           path: |
-            mobile/android/app/build/outputs/bundle/release/*.aab
-            mobile/android/app/build/outputs/apk/release/*.apk
+            mobile/android/app/build/outputs/bundle/debug/*.aab
+            mobile/android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -320,7 +323,7 @@ jobs:
           xcodebuild \
             -project ios/App/App.xcodeproj \
             -scheme App \
-            -configuration Release \
+            -configuration Debug \
             -archivePath "$RUNNER_TEMP/Fotmio.xcarchive" \
             archive \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
@@ -348,13 +351,13 @@ jobs:
           - platform: Windows
             os: windows-latest
             rust-targets: wasm32-unknown-unknown
-            args: ''
-            bundle-path: desktop/src-tauri/target/release/bundle/**
+            args: '--debug'
+            bundle-path: desktop/src-tauri/target/debug/bundle/**
           - platform: macOS
             os: macos-latest
             rust-targets: wasm32-unknown-unknown,aarch64-apple-darwin,x86_64-apple-darwin
-            args: --target universal-apple-darwin
-            bundle-path: desktop/src-tauri/target/universal-apple-darwin/release/bundle/**
+            args: --target universal-apple-darwin --debug
+            bundle-path: desktop/src-tauri/target/universal-apple-darwin/debug/bundle/**
     steps:
       - uses: actions/checkout@v4
 
