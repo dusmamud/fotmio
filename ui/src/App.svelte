@@ -159,17 +159,17 @@
   })
 </script>
 
-<div class="shell">
-  <header class="topbar">
+<header class="topbar">
+  <div class="topbar-inner">
     <div class="brand">
       <span class="logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="4" />
           <circle cx="9.5" cy="9.5" r="1.8" fill="currentColor" stroke="none" />
           <path d="m21 16-4.8-4.8a1.6 1.6 0 0 0-2.2 0L7 18" />
         </svg>
       </span>
-      <div>
+      <div class="brand-text">
         <h1>Fotmio</h1>
         <p>{$t.app.tagline}</p>
       </div>
@@ -191,7 +191,7 @@
       </div>
       <button
         type="button"
-        class="theme-toggle"
+        class="icon-btn"
         onclick={toggleTheme}
         aria-label={dark ? $t.app.switchToLight : $t.app.switchToDark}
         title={dark ? $t.app.switchToLight : $t.app.switchToDark}
@@ -208,24 +208,35 @@
         {/if}
       </button>
     </div>
-  </header>
+  </div>
+</header>
 
-  <p class="privacy">
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M12 22s8-3.6 8-10V5l-8-3-8 3v7c0 6.4 8 10 8 10z" />
-      <path d="m9 11.5 2 2 4-4" />
-    </svg>
-    {$t.app.privacy}
-  </p>
+<div class="shell">
+  <div class="subhead">
+    <p class="privacy">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-3.6 8-10V5l-8-3-8 3v7c0 6.4 8 10 8 10z" />
+        <path d="m9 11.5 2 2 4-4" />
+      </svg>
+      <span>{$t.app.privacy}</span>
+    </p>
 
-  <ol class="steps" aria-label={$t.app.progress}>
-    {#each stepLabels as label, i (label)}
-      <li class:active={screen === i + 1} class:done={screen > i + 1}>
-        <span class="dot">{i + 1}</span> {label}
-      </li>
-      {#if i < stepLabels.length - 1}<li class="sep" aria-hidden="true"></li>{/if}
-    {/each}
-  </ol>
+    <ol class="steps" aria-label={$t.app.progress}>
+      {#each stepLabels as label, i (label)}
+        <li class:active={screen === i + 1} class:done={screen > i + 1}>
+          <span class="dot" aria-hidden="true">
+            {#if screen > i + 1}
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            {:else}
+              {i + 1}
+            {/if}
+          </span>
+          <span class="step-label">{label}</span>
+        </li>
+        {#if i < stepLabels.length - 1}<li class="sep" aria-hidden="true"></li>{/if}
+      {/each}
+    </ol>
+  </div>
 
   <main>
     {#if screen === 1}
@@ -262,30 +273,34 @@
 </div>
 
 <style>
-  .shell {
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 20px 18px 40px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    min-height: 100vh;
-  }
   .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 28px);
+    height: var(--header-h);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    flex-wrap: wrap;
   }
   .brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 11px;
+    min-width: 0;
   }
   .logo {
-    width: 46px;
-    height: 46px;
+    width: 42px;
+    height: 42px;
     border-radius: 12px;
     background: var(--primary);
     color: #fff;
@@ -293,26 +308,31 @@
     align-items: center;
     justify-content: center;
     flex: none;
+    box-shadow: var(--shadow-sm);
   }
-  .brand h1 {
+  .brand-text h1 {
     margin: 0;
-    font-size: 1.55rem;
+    font-size: 1.28rem;
+    font-weight: 750;
     line-height: 1.1;
-    letter-spacing: -0.01em;
   }
-  .brand p {
+  .brand-text p {
     margin: 0;
     color: var(--text-2);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
+    flex: none;
   }
   .lang-switch {
     display: flex;
-    background: var(--surface);
+    background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: 999px;
     padding: 3px;
@@ -323,17 +343,18 @@
     background: transparent;
     color: var(--text-2);
     font-weight: 700;
-    font-size: 0.85rem;
-    padding: 6px 13px;
+    font-size: 0.83rem;
+    min-height: 32px;
+    padding: 5px 13px;
     border-radius: 999px;
   }
   .lang-switch button.active {
     background: var(--primary);
     color: #fff;
   }
-  .theme-toggle {
-    width: 42px;
-    height: 42px;
+  .icon-btn {
+    width: 40px;
+    height: 40px;
     border-radius: 999px;
     border: 1px solid var(--border);
     background: var(--surface);
@@ -342,19 +363,35 @@
     align-items: center;
     justify-content: center;
   }
-  .theme-toggle:hover {
+  .icon-btn:hover {
     border-color: var(--primary);
     color: var(--primary);
+  }
+
+  .shell {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 22px clamp(16px, 4vw, 28px) 28px;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(16px, 2.6vw, 24px);
+    min-height: calc(100vh - var(--header-h));
+  }
+  .subhead {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
   .privacy {
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     color: var(--success);
     background: var(--success-soft);
-    border-radius: 10px;
-    padding: 8px 12px;
+    border: 1px solid color-mix(in srgb, var(--success) 22%, transparent);
+    border-radius: 12px;
+    padding: 9px 13px;
     font-size: 0.88rem;
     font-weight: 600;
   }
@@ -371,19 +408,23 @@
     color: var(--text-3);
     font-weight: 600;
     font-size: 0.92rem;
-    flex-wrap: wrap;
+  }
+  .steps li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
   .steps .dot {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 999px;
     border: 2px solid var(--border);
+    background: var(--surface);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 0.8rem;
-    margin-right: 2px;
-    vertical-align: -6px;
+    flex: none;
   }
   .steps li.active {
     color: var(--primary);
@@ -403,20 +444,40 @@
   }
   .steps .sep {
     flex: 1;
-    max-width: 42px;
+    max-width: 56px;
     height: 2px;
     background: var(--border);
     border-radius: 2px;
   }
   main {
     flex: 1;
+    display: flex;
+    flex-direction: column;
   }
   footer {
     color: var(--text-3);
     font-size: 0.85rem;
     text-align: center;
+    padding-top: 6px;
   }
   footer p {
     margin: 0;
+  }
+
+  @media (max-width: 639px) {
+    .brand-text p {
+      display: none;
+    }
+    .steps {
+      font-size: 0.85rem;
+      gap: 7px;
+    }
+    .steps .dot {
+      width: 23px;
+      height: 23px;
+    }
+    .privacy {
+      font-size: 0.82rem;
+    }
   }
 </style>

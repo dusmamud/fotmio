@@ -56,8 +56,10 @@
   </div>
 
   <p class="headline">
-    {formatBytes(result.originalBytes)} <span aria-hidden="true">→</span>
-    <strong>{formatBytes(meta.outputBytes)}</strong>
+    <span class="sizes">
+      {formatBytes(result.originalBytes)} <span aria-hidden="true">→</span>
+      <strong>{formatBytes(meta.outputBytes)}</strong>
+    </span>
     <span class="saving">{savingsLabel(result.originalBytes, meta.outputBytes, $t.results)}</span>
   </p>
 
@@ -84,7 +86,11 @@
     </div>
   </dl>
 
-  <a class="btn primary" href={result.url} download={result.downloadName}>
+  <a class="btn primary download" href={result.url} download={result.downloadName}>
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 4v11m0 0 4-4m-4 4-4-4" />
+      <path d="M4 19h16" />
+    </svg>
     {$t.resultCard.download}
   </a>
 </article>
@@ -95,10 +101,10 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    padding: 16px;
+    padding: clamp(14px, 2.4vw, 18px);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 13px;
   }
   header {
     display: flex;
@@ -108,7 +114,8 @@
   }
   h3 {
     margin: 0;
-    font-size: 1rem;
+    font-size: 0.98rem;
+    font-weight: 650;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -121,26 +128,28 @@
     color: var(--primary);
     background: var(--primary-soft);
     border-radius: 999px;
-    padding: 3px 9px;
+    padding: 4px 10px;
   }
   .preview {
     position: relative;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
-    background: var(--surface-2);
+    background:
+      repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface) 0% 50%) 0 0 / 22px 22px;
   }
   .preview img {
     width: 100%;
-    height: 190px;
+    aspect-ratio: 16 / 10;
     object-fit: contain;
   }
   .switch {
     position: absolute;
-    bottom: 8px;
+    bottom: 9px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    background: rgb(15 23 42 / 0.72);
+    background: rgb(15 23 42 / 0.78);
+    backdrop-filter: blur(6px);
     border-radius: 999px;
     padding: 3px;
     gap: 2px;
@@ -151,7 +160,8 @@
     color: #cbd5e1;
     font-size: 0.8rem;
     font-weight: 600;
-    padding: 4px 12px;
+    min-height: 30px;
+    padding: 4px 14px;
     border-radius: 999px;
   }
   .switch button.active {
@@ -160,12 +170,23 @@
   }
   .headline {
     margin: 0;
-    font-size: 1.02rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
   }
-  .headline .saving {
+  .sizes {
+    font-size: 1.04rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .saving {
     color: var(--success);
+    background: var(--success-soft);
+    border-radius: 999px;
+    padding: 4px 11px;
     font-weight: 700;
-    margin-left: 6px;
+    font-size: 0.85rem;
   }
   .warn {
     margin: 0;
@@ -183,11 +204,12 @@
   }
   .facts div {
     background: var(--surface-2);
-    border-radius: 9px;
-    padding: 7px 10px;
+    border-radius: 10px;
+    padding: 8px 11px;
+    min-width: 0;
   }
   .facts dt {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-3);
@@ -197,26 +219,21 @@
     margin: 1px 0 0;
     font-size: 0.88rem;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
   .facts .was {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     color: var(--text-2);
     font-weight: 500;
   }
-  .btn {
-    border-radius: 10px;
-    padding: 10px 18px;
-    font-weight: 600;
-    text-align: center;
-    text-decoration: none;
+  .download {
     margin-top: auto;
+    width: 100%;
   }
-  .btn.primary {
-    background: var(--primary);
-    color: #fff;
-  }
-  .btn.primary:hover {
-    background: var(--primary-dark);
+  @media (max-width: 400px) {
+    .facts {
+      grid-template-columns: 1fr 1fr;
+    }
   }
 </style>
