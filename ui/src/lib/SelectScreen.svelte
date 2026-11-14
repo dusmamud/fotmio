@@ -47,16 +47,24 @@
   }
 </script>
 
-<section class="flex flex-col gap-4 sm:gap-5">
+<section
+  class="flex flex-col gap-4 sm:gap-5"
+  ondragover={(e) => {
+    e.preventDefault()
+    dragging = true
+  }}
+  ondragleave={() => (dragging = false)}
+  ondrop={handleDrop}
+>
   <div>
     <h2 class="text-xl font-bold tracking-tight sm:text-2xl">{$t.select.heading}</h2>
     <p class="mt-1 text-sm text-muted-foreground sm:text-[15px]">{$t.select.intro}</p>
   </div>
 
+  {#if images.length === 0}
   <div
     class={cn(
-      'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed bg-card px-4 text-center shadow-xs transition-colors hover:border-primary/60 hover:bg-accent/40',
-      images.length > 0 ? 'py-5 sm:py-6' : 'py-9 sm:py-14',
+      'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed bg-card px-4 py-9 text-center shadow-xs transition-colors hover:border-primary/60 hover:bg-accent/40 sm:py-14',
       dragging && 'border-primary bg-accent/60',
     )}
     role="button"
@@ -69,12 +77,6 @@
         openPicker()
       }
     }}
-    ondragover={(e) => {
-      e.preventDefault()
-      dragging = true
-    }}
-    ondragleave={() => (dragging = false)}
-    ondrop={handleDrop}
   >
     <span class="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary sm:size-14" aria-hidden="true">
       <CloudUpload class="size-6 sm:size-7" />
@@ -94,6 +96,7 @@
       onchange={(e) => pickFiles(e.currentTarget.files)}
     />
   </div>
+  {/if}
 
   {#if rejected.length > 0}
     <Alert variant="destructive">
@@ -108,7 +111,12 @@
   {/if}
 
   {#if images.length > 0}
-    <ul class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
+    <ul
+      class={cn(
+        'grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4',
+        dragging && 'rounded-xl outline-2 outline-dashed outline-offset-4 outline-primary',
+      )}
+    >
       {#each images as img (img.id)}
         <li class="relative rounded-xl border bg-card p-1.5 shadow-xs">
           <img

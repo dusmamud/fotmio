@@ -218,35 +218,49 @@
   </header>
 
   <div class="mx-auto flex w-full max-w-[1080px] flex-1 flex-col gap-4 px-4 pt-4 sm:gap-5 sm:px-6 sm:pt-6">
-    <p class="flex items-center gap-2 rounded-xl border border-success/25 bg-success/10 px-3 py-2 text-[13px] font-medium text-success sm:text-sm">
-      <ShieldCheck class="size-4 shrink-0" aria-hidden="true" />
+    <p class="flex items-center gap-1.5 text-[13px] text-muted-foreground sm:text-sm">
+      <ShieldCheck class="size-4 shrink-0 text-success" aria-hidden="true" />
       <span>{$t.app.privacy}</span>
     </p>
+
+    {#snippet stepFace(i: number, label: string)}
+      <span
+        class={cn(
+          'flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold sm:size-7 sm:text-xs',
+          screen === i + 1 && 'border-primary bg-primary text-primary-foreground',
+          screen > i + 1 && 'border-success bg-success text-success-foreground',
+          screen < i + 1 && 'border-border bg-card text-muted-foreground',
+        )}
+        aria-hidden="true"
+      >
+        {#if screen > i + 1}
+          <Check class="size-3.5" strokeWidth={3.2} />
+        {:else}
+          {i + 1}
+        {/if}
+      </span>
+      <span
+        class={cn(
+          'text-[13px] font-semibold whitespace-nowrap sm:text-sm',
+          screen === i + 1 ? 'text-primary' : screen > i + 1 ? 'text-success' : 'text-muted-foreground',
+        )}>{label}</span
+      >
+    {/snippet}
 
     <ol class="flex items-center gap-1.5 sm:gap-2" aria-label={$t.app.progress}>
       {#each stepLabels as label, i (label)}
         <li class="flex items-center gap-1.5 sm:gap-2">
-          <span
-            class={cn(
-              'flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold sm:size-7 sm:text-xs',
-              screen === i + 1 && 'border-primary bg-primary text-primary-foreground',
-              screen > i + 1 && 'border-success bg-success text-success-foreground',
-              screen < i + 1 && 'border-border bg-card text-muted-foreground',
-            )}
-            aria-hidden="true"
-          >
-            {#if screen > i + 1}
-              <Check class="size-3.5" strokeWidth={3.2} />
-            {:else}
-              {i + 1}
-            {/if}
-          </span>
-          <span
-            class={cn(
-              'text-[13px] font-semibold whitespace-nowrap sm:text-sm',
-              screen === i + 1 ? 'text-primary' : screen > i + 1 ? 'text-success' : 'text-muted-foreground',
-            )}>{label}</span
-          >
+          {#if screen > i + 1}
+            <button
+              type="button"
+              class="flex items-center gap-1.5 sm:gap-2"
+              onclick={() => (screen = (i + 1) as 1 | 2 | 3)}
+            >
+              {@render stepFace(i, label)}
+            </button>
+          {:else}
+            {@render stepFace(i, label)}
+          {/if}
         </li>
         {#if i < stepLabels.length - 1}
           <li class="h-0.5 min-w-2 flex-1 rounded bg-border sm:max-w-14" aria-hidden="true"></li>

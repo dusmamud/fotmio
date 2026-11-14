@@ -10,6 +10,7 @@
   import ArrowLeft from 'lucide-svelte/icons/arrow-left'
   import ArrowRight from 'lucide-svelte/icons/arrow-right'
   import CircleAlert from 'lucide-svelte/icons/circle-alert'
+  import Download from 'lucide-svelte/icons/download'
   import Images from 'lucide-svelte/icons/images'
 
   interface Props {
@@ -32,6 +33,18 @@
       : pct < 0
         ? interpolate(dict.results.larger, { percent })
         : dict.results.sameSize
+  }
+
+  async function downloadAll() {
+    for (const r of results) {
+      const a = document.createElement('a')
+      a.href = r.url
+      a.download = r.downloadName
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      await new Promise((resolve) => setTimeout(resolve, 300))
+    }
   }
 
   function summaryText(dict: Dictionary): string {
@@ -75,6 +88,15 @@
         <Badge variant="success" class="ml-auto px-2.5 py-1 text-[13px]">{savingsText($t)}</Badge>
       </CardContent>
     </Card>
+  {/if}
+
+  {#if results.length > 1}
+    <div class="flex">
+      <Button onclick={downloadAll} class="flex-1 sm:flex-none">
+        <Download />
+        {$t.results.downloadAll} ({results.length})
+      </Button>
+    </div>
   {/if}
 
   {#if failures.length > 0}

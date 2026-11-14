@@ -182,8 +182,6 @@
             </div>
           </TabsContent>
 
-          <TabsContent value="quality" class="mt-0"></TabsContent>
-
           <Separator />
 
           <div class="flex flex-col gap-2.5">

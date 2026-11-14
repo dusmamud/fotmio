@@ -111,6 +111,7 @@ const enIN = {
     failedHeadingMany: 'Could not compress {count} files',
     backToSettings: 'Back to settings',
     compressMore: 'Compress more photos',
+    downloadAll: 'Download all',
   },
   resultCard: {
     rustEngine: 'Rust engine',

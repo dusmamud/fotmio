@@ -111,6 +111,7 @@ const hiIN: Dictionary = {
     failedHeadingMany: '{count} फ़ाइलें कंप्रेस नहीं हो सकीं',
     backToSettings: 'सेटिंग्स पर वापस जाएँ',
     compressMore: 'और फ़ोटो कंप्रेस करें',
+    downloadAll: 'सभी डाउनलोड करें',
   },
   resultCard: {
     rustEngine: 'Rust इंजन',
