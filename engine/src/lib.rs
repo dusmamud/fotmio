@@ -3,9 +3,8 @@
 //!
 //! Pipeline: decode (image crate) -> EXIF auto-orient (kamadak-exif)
 //! -> optional resize -> encode (JPEG / WebP / PNG).
-//! Target-size mode: max-quality encode -> quality binary search
-//! (max 10 attempts, 2% tolerance) -> dimension fallback x0.85
-//! (max 8 passes, min dimension 64).
+//! Target-size mode: JPEG par SSIM-guided multi-size search (100/85/70%),
+//! baaki par quality binary search + dimension fallback x0.85.
 
 use std::cell::RefCell;
 use std::io::Cursor;
@@ -381,14 +380,76 @@ fn encode_webp(img: &DynamicImage, _quality: u8, _bg: (u8, u8, u8)) -> Result<Ve
 }
 
 // ---------------------------------------------------------------------------
-// Target-size algorithm (contract — locked)
+// Target-size algorithm
 // ---------------------------------------------------------------------------
+//
+// JPEG ke liye SSIM-guided search (v3): sirf quality ghata kar full-size par
+// rukna hamesha best nahi hota — mushkil targets (jaise 56 KB -> 20 KB) par
+// thodi chhoti size + zyada quality aankh ko behtar dikhti hai, aur kuch
+// photos par full-size hi best rehta hai. Isliye engine 3 candidate sizes
+// (100% / 85% / 70%) par quality search chalata hai, har candidate ko
+// full-size par upscale karke SSIM (perceptual quality) se score karta hai,
+// aur sabse achha score wala candidate deta hai. Score barabar ho to badi
+// size jeet-ti hai (resolution pehle). Pehli size par hi SSIM >= 0.95 mil
+// jaye to baaki sizes try nahi hote (aasan targets fast rehte hain).
+// Benchmark (3 real photos, ~56 KB -> 20 KB): SSIM jeet — mountain full-size
+// 0.808 (wahi chuna gaya), mona 0.711 -> 0.727 (70%), cat 0.882 -> 0.900 (70%).
+//
+// Baaki formats (aur jab koi candidate fit na ho) ke liye classic search:
+// max-quality encode -> quality binary search (max 10 attempts, 2%
+// tolerance) -> dimension fallback x0.85 (max 8 passes, min dimension 64).
 
 struct SearchOutcome {
     bytes: Vec<u8>,
     img: DynamicImage,
     quality: u8,
     attempts: u32,
+}
+
+/// Ek fixed size par quality search: pehle max quality, phir binary search.
+/// Fit (<= target) ho to sabse achhi quality wali output, warna None.
+fn search_at_scale(
+    current: &DynamicImage,
+    format: OutFormat,
+    bg: (u8, u8, u8),
+    target: u64,
+    q_max: u8,
+    smallest: &mut Option<(Vec<u8>, DynamicImage, u8)>,
+    attempts: &mut u32,
+) -> Result<Option<(Vec<u8>, u8)>, String> {
+    let mut phase_attempts: u32 = 0;
+
+    // Step 1: max quality par 1 encode — fit ho to done.
+    let first = encode(current, format, q_max, bg)?;
+    *attempts += 1;
+    phase_attempts += 1;
+    track_smallest(smallest, &first, current, q_max);
+    if (first.len() as u64) <= target {
+        return Ok(Some((first, q_max)));
+    }
+
+    // Step 2: quality binary search (phase me kul max 10 attempts),
+    // best valid (<= target) result rakho; 2% tolerance band me ruk jao.
+    let mut best: Option<(Vec<u8>, u8)> = None;
+    let mut lo: i32 = 1;
+    let mut hi: i32 = q_max as i32 - 1;
+    while lo <= hi && phase_attempts < 10 {
+        let mid = ((lo + hi) / 2) as u8;
+        let bytes = encode(current, format, mid, bg)?;
+        *attempts += 1;
+        phase_attempts += 1;
+        track_smallest(smallest, &bytes, current, mid);
+        if (bytes.len() as u64) <= target {
+            if (bytes.len() as f64) >= 0.98 * target as f64 {
+                return Ok(Some((bytes, mid)));
+            }
+            best = Some((bytes, mid));
+            lo = mid as i32 + 1;
+        } else {
+            hi = mid as i32 - 1;
+        }
+    }
+    Ok(best)
 }
 
 fn target_search(
@@ -400,54 +461,30 @@ fn target_search(
     let target = options.target_bytes.unwrap_or(0);
     let q_max = clamp_quality(options.quality.unwrap_or(90));
     let mut attempts: u32 = 0;
-    let mut current = base.clone();
     // Best-effort fallback: ab tak ki sabse chhoti output (agar target kabhi na mile).
     let mut smallest: Option<(Vec<u8>, DynamicImage, u8)> = None;
 
+    // JPEG: SSIM-guided multi-size search pehle try karo.
+    if format == OutFormat::Jpeg {
+        if let Some(outcome) =
+            target_search_ssim(base, bg, target, q_max, &mut smallest, &mut attempts)?
+        {
+            return Ok(outcome);
+        }
+    }
+
+    // Classic search: current size se shuru, phir dimension fallback x0.85.
+    let mut current = base.clone();
     for pass in 0..=8u32 {
-        let mut phase_attempts: u32 = 0;
-
-        // Step 1: max quality par 1 encode — fit ho to done.
-        let first = encode(&current, format, q_max, bg)?;
-        attempts += 1;
-        phase_attempts += 1;
-        track_smallest(&mut smallest, &first, &current, q_max);
-        if (first.len() as u64) <= target {
-            return Ok(SearchOutcome {
-                bytes: first,
-                img: current,
-                quality: q_max,
-                attempts,
-            });
-        }
-
-        // Step 2: quality binary search (phase me kul max 10 attempts),
-        // best valid (<= target) result rakho; 2% tolerance band me ruk jao.
-        let mut best: Option<(Vec<u8>, u8)> = None;
-        let mut lo: i32 = 1;
-        let mut hi: i32 = q_max as i32 - 1;
-        while lo <= hi && phase_attempts < 10 {
-            let mid = ((lo + hi) / 2) as u8;
-            let bytes = encode(&current, format, mid, bg)?;
-            attempts += 1;
-            phase_attempts += 1;
-            track_smallest(&mut smallest, &bytes, &current, mid);
-            if (bytes.len() as u64) <= target {
-                if (bytes.len() as f64) >= 0.98 * target as f64 {
-                    return Ok(SearchOutcome {
-                        bytes,
-                        img: current,
-                        quality: mid,
-                        attempts,
-                    });
-                }
-                best = Some((bytes, mid));
-                lo = mid as i32 + 1;
-            } else {
-                hi = mid as i32 - 1;
-            }
-        }
-        if let Some((bytes, q)) = best {
+        if let Some((bytes, q)) = search_at_scale(
+            &current,
+            format,
+            bg,
+            target,
+            q_max,
+            &mut smallest,
+            &mut attempts,
+        )? {
             return Ok(SearchOutcome {
                 bytes,
                 img: current,
@@ -456,7 +493,7 @@ fn target_search(
             });
         }
 
-        // Step 3: dimension fallback x0.85 (max 8 passes, min dimension 64).
+        // Dimension fallback x0.85 (max 8 passes, min dimension 64).
         if pass == 8 {
             break;
         }
@@ -484,6 +521,151 @@ fn target_search(
             attempts,
         }),
         None => Err("target search: koi encode nahi ban paya".to_string()),
+    }
+}
+
+/// SSIM-guided JPEG search: candidate sizes par quality search karke har
+/// candidate ko perceptual score do; sabse achha score (tie par badi size)
+/// wala candidate return karo. Koi candidate fit na ho to None (caller
+/// classic search par girta hai).
+fn target_search_ssim(
+    base: &DynamicImage,
+    bg: (u8, u8, u8),
+    target: u64,
+    q_max: u8,
+    smallest: &mut Option<(Vec<u8>, DynamicImage, u8)>,
+    attempts: &mut u32,
+) -> Result<Option<SearchOutcome>, String> {
+    let (bw, bh) = base.dimensions();
+    let ref_gray = luma_of(base);
+    let mut best: Option<(f64, SearchOutcome)> = None;
+
+    for (idx, scale) in [1.0f64, 0.85, 0.70].iter().enumerate() {
+        let cand_img = if idx == 0 {
+            base.clone()
+        } else {
+            let nw = ((bw as f64 * scale) as u32).max(64);
+            let nh = ((bh as f64 * scale) as u32).max(64);
+            if nw >= bw && nh >= bh {
+                continue; // chhoti image par scale ka koi matlab nahi
+            }
+            base.resize_exact(nw, nh, FilterType::Lanczos3)
+        };
+        let found = search_at_scale(
+            &cand_img,
+            OutFormat::Jpeg,
+            bg,
+            target,
+            q_max,
+            smallest,
+            attempts,
+        )?;
+        let Some((bytes, q)) = found else {
+            continue;
+        };
+        // Score: candidate ko full size par laakar reference se SSIM compare.
+        let score = match image::load_from_memory(&bytes) {
+            Ok(decoded) => {
+                let up = if decoded.dimensions() == (bw, bh) {
+                    decoded
+                } else {
+                    decoded.resize_exact(bw, bh, FilterType::Lanczos3)
+                };
+                ssim_gray(&ref_gray, &luma_of(&up), bw, bh)
+            }
+            Err(_) => 0.0,
+        };
+        // Aasan target: pehli (full) size par hi behtareen quality — ruk jao.
+        if idx == 0 && score >= 0.95 {
+            return Ok(Some(SearchOutcome {
+                bytes,
+                img: cand_img,
+                quality: q,
+                attempts: *attempts,
+            }));
+        }
+        let is_better = match &best {
+            None => true,
+            Some((best_score, _)) => score > *best_score + 0.002,
+        };
+        if is_better {
+            best = Some((
+                score,
+                SearchOutcome {
+                    bytes,
+                    img: cand_img,
+                    quality: q,
+                    attempts: *attempts,
+                },
+            ));
+        }
+    }
+
+    Ok(best.map(|(_, outcome)| SearchOutcome {
+        attempts: *attempts,
+        ..outcome
+    }))
+}
+
+/// RGB image ko luma (grayscale) values me badlo — SSIM ke liye.
+fn luma_of(img: &DynamicImage) -> Vec<f64> {
+    let rgb = img.to_rgb8();
+    rgb.as_raw()
+        .as_chunks::<3>()
+        .0
+        .iter()
+        .map(|p| 0.299 * p[0] as f64 + 0.587 * p[1] as f64 + 0.114 * p[2] as f64)
+        .collect()
+}
+
+/// Block SSIM (8x8 blocks, luma par): 1.0 = identical. Candidate ranking ke
+/// liye standard SSIM formula kaafi hai.
+fn ssim_gray(a: &[f64], b: &[f64], w: u32, h: u32) -> f64 {
+    let (w, h) = (w as usize, h as usize);
+    if a.len() != w * h || b.len() != w * h || w < 8 || h < 8 {
+        return 0.0;
+    }
+    let c1 = (0.01f64 * 255.0).powi(2);
+    let c2 = (0.03f64 * 255.0).powi(2);
+    let mut sum = 0.0f64;
+    let mut n = 0u64;
+    let mut by = 0;
+    while by + 8 <= h {
+        let mut bx = 0;
+        while bx + 8 <= w {
+            let (mut ma, mut mb, mut va, mut vb, mut cov) = (0.0, 0.0, 0.0, 0.0, 0.0);
+            for y in 0..8 {
+                for x in 0..8 {
+                    let i = (by + y) * w + (bx + x);
+                    ma += a[i];
+                    mb += b[i];
+                }
+            }
+            ma /= 64.0;
+            mb /= 64.0;
+            for y in 0..8 {
+                for x in 0..8 {
+                    let i = (by + y) * w + (bx + x);
+                    let (da, db) = (a[i] - ma, b[i] - mb);
+                    va += da * da;
+                    vb += db * db;
+                    cov += da * db;
+                }
+            }
+            va /= 63.0;
+            vb /= 63.0;
+            cov /= 63.0;
+            sum += ((2.0 * ma * mb + c1) * (2.0 * cov + c2))
+                / ((ma * ma + mb * mb + c1) * (va + vb + c2));
+            n += 1;
+            bx += 8;
+        }
+        by += 8;
+    }
+    if n == 0 {
+        0.0
+    } else {
+        sum / n as f64
     }
 }
 

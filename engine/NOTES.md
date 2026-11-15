@@ -102,3 +102,25 @@ Benchmark (1280x575 real photo, input 56,827 B -> target 20,480 B):
 - WASM end-to-end (Node, wasm-pack build): targetMet=true, attempts=8, ~0.85 s
 - Scale sweep (0.85/0.72/0.61) par PSNR behtar nahi mila, isliye dimensions
   full-size hi rakhe gaye; dimension fallback ab sirf last-resort hai.
+
+## v3 fix (2026-11-15) — SSIM-guided "best quality" target search
+
+User: "engine best nahi hua." Research (Exa): Jpegli MozJPEG se ~9-19%
+behtar hai lekin saare pure-Rust Jpegli ports (zenjpeg, jpegli-rs) AGPL
+hain — product me bina license decision ke nahi daal sakte. Isliye
+license-clean best: MozJPEG encoder ke upar **SSIM-guided search**.
+
+Badlav (sirf JPEG target mode): engine ab 3 candidate sizes (100% / 85% /
+70%) par quality search chalata hai, har candidate ko full-size par upscale
+karke block-SSIM se score karta hai, aur best score wala deta hai (tie par
+badi size). Full-size par SSIM >= 0.95 milte hi ruk jata hai (aasan targets
+fast). Koi candidate fit na ho to purana classic search + dimension
+fallback hi chalta hai. max_compression preset balanced ke barabar nikla
+(same SSIM, 3x slow) — isliye balanced hi rakha.
+
+Benchmark (~56 KB input -> 20 KB target, SSIM full-view par):
+- Mountain 1280x575: pehle q15/full SSIM 0.808 -> ab bhi full-size q15 (engine ne khud full chuna) 0.808
+- Mona Lisa 960x1431: pehle q15/full 0.711 -> ab 70% size q26, SSIM 0.727
+- Cat 1280x1278: pehle q12/full 0.882 -> ab 70% size q23, SSIM 0.900
+WASM end-to-end (Node): teeno par targetMet=true; mushkil targets par
+~2-4 s (is VM par), aasan targets early-exit se fast.
