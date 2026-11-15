@@ -124,3 +124,28 @@ Benchmark (~56 KB input -> 20 KB target, SSIM full-view par):
 - Cat 1280x1278: pehle q12/full 0.882 -> ab 70% size q23, SSIM 0.900
 WASM end-to-end (Node): teeno par targetMet=true; mushkil targets par
 ~2-4 s (is VM par), aasan targets early-exit se fast.
+
+## v4 fix (2026-11-15): wasm WebP lossy — webpkit
+
+User ko offer kiya gaya tha ki web par WebP me wahi JPEG wali shrink
+problem bachi hai; user ne haan kaha. Research (Exa + crates.io):
+- zenwebp (Imazen) pure Rust + wasm-ready hai lekin **AGPL** — zenjpeg
+  wali hi bandish, reject.
+- image-webp 0.2.4 (image-rs) ka released encoder abhi **lossless-only**
+  hai (VP8L chunk likhta hai); lossy VP8 encoder abhi release nahi hua.
+- **webpkit 0.1 (MIT OR Apache-2.0)** — pure Rust lossy VP8 encoder,
+  one-call API `encode_lossy_rgba(w, h, rgba, quality)`. Chuna gaya.
+
+Badlav (sirf wasm32): quality >= 100 par purana image-crate lossless
+(alpha preserve); quality < 100 par native ki tarah alpha background par
+flatten karke webpkit se lossy encode. Dependency target-specific hai —
+native build bilkul unchanged (libwebp hi chalta hai).
+
+Benchmark (~56 KB input -> 20 KB target, full-size, SSIM full-view):
+- Mountain: q16, 20,146 B, SSIM 0.771 (JPEG engine 0.808)
+- Mona Lisa: q14, 19,676 B, SSIM 0.713 (JPEG 0.727)
+- Cat: q14, 20,178 B, SSIM 0.912 (JPEG 0.900)
+Quality->size control smooth/monotonic hai; teeno par target full-size
+par fit — dimension shrink khatm. SSIM libwebp-class se thoda peeche
+hai lekin purane lossless-only behaviour (target kabhi fit hi nahi)
+se bahut aage hai.

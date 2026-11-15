@@ -349,7 +349,12 @@ fn encode_jpeg(img: &DynamicImage, quality: u8) -> Result<Vec<u8>, String> {
         .map_err(|e| format!("mozjpeg encode fail: {e}"))
 }
 
-// --- WebP: native = libwebp (webp crate), wasm = image crate lossless -----
+// --- WebP: native = libwebp (webp crate); wasm = webpkit lossy (pure Rust
+// VP8) + image-crate lossless. Pehle wasm par sirf lossless tha, isliye
+// quality ka koi asar nahi padta tha aur target-size search WebP par
+// hamesha dimension fallback par gir jata tha (photo shrink ho jati thi).
+// Benchmark (webpkit, ~56 KB -> 20 KB, full-size fit): mountain SSIM
+// 0.771, mona 0.713, cat 0.912 — teeno par target fit, koi shrink nahi.
 
 #[cfg(not(target_arch = "wasm32"))]
 fn encode_webp(img: &DynamicImage, quality: u8, bg: (u8, u8, u8)) -> Result<Vec<u8>, String> {
@@ -369,14 +374,23 @@ fn encode_webp(img: &DynamicImage, quality: u8, bg: (u8, u8, u8)) -> Result<Vec<
 }
 
 #[cfg(target_arch = "wasm32")]
-fn encode_webp(img: &DynamicImage, _quality: u8, _bg: (u8, u8, u8)) -> Result<Vec<u8>, String> {
-    // libwebp (C build) wasm32 par nahi banta — image crate ka WebP encoder
-    // sirf lossless hai, isliye wasm par quality ka asar WebP par nahi padta
-    // aur alpha preserve rehta hai (dekho NOTES.md).
-    let mut buf = Vec::new();
-    let encoder = WebPEncoder::new_lossless(&mut buf);
-    write_encoded(encoder, img).map_err(|e| format!("webp encode fail: {e}"))?;
-    Ok(buf)
+fn encode_webp(img: &DynamicImage, quality: u8, bg: (u8, u8, u8)) -> Result<Vec<u8>, String> {
+    if quality >= 100 {
+        // Lossless: alpha preserve (image crate).
+        let mut buf = Vec::new();
+        let encoder = WebPEncoder::new_lossless(&mut buf);
+        write_encoded(encoder, img).map_err(|e| format!("webp encode fail: {e}"))?;
+        Ok(buf)
+    } else {
+        // Lossy: webpkit (pure Rust VP8 encoder). Native ki tarah alpha ko
+        // background par flatten karke encode karo — quality par size
+        // control milta hai, isliye target-size search ab kaam karta hai.
+        let flat = flatten(img, bg);
+        let rgba = flat.to_rgba8();
+        let (w, h) = rgba.dimensions();
+        webpkit::encode_lossy_rgba(w, h, rgba.as_raw(), quality)
+            .map_err(|e| format!("webp encode fail: {e}"))
+    }
 }
 
 // ---------------------------------------------------------------------------

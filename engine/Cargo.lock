@@ -335,6 +335,7 @@ dependencies = [
  "serde_json",
  "wasm-bindgen",
  "webp",
+ "webpkit",
 ]
 
 [[package]]
@@ -1168,6 +1169,12 @@ dependencies = [
  "image",
  "libwebp-sys",
 ]
+
+[[package]]
+name = "webpkit"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a44c05a5c09ec3ec51597212cbcca62c2d8f4adf80d24794cacf597b13855c8f"
 
 [[package]]
 name = "weezl"

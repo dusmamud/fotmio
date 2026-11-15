@@ -24,8 +24,15 @@ kamadak-exif = "0.5"
 mozjpeg-rs = "0.9"
 
 # Native-only encoder (C library): WebP. WASM build me ye compile nahi
-# hota; wahan image-crate ka lossless WebP fallback use hota hai
-# (dekho src/lib.rs + NOTES.md). JPEG ab mozjpeg-rs (pure Rust) hai —
-# native + wasm dono par ek hi encoder.
+# hota; wahan lossy ke liye webpkit (pure Rust VP8 encoder, MIT/Apache)
+# aur lossless ke liye image-crate use hota hai (dekho src/lib.rs +
+# NOTES.md). JPEG ab mozjpeg-rs (pure Rust) hai — native + wasm dono
+# par ek hi encoder.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 webp = "0.3"
+
+# WASM-only: pure-Rust lossy WebP encoder (libwebp C build wasm32 par
+# nahi banta; image-webp ka released encoder abhi lossless-only hai;
+# zenwebp AGPL hai — isliye webpkit).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+webpkit = "0.1"
